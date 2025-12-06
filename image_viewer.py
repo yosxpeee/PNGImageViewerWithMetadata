@@ -6,6 +6,17 @@ import string
 import png
 from datetime import datetime
 
+def make_copyable_text(value: str, size=12):
+    return ft.TextField(
+        value=value,
+        read_only=True,
+        multiline=True,
+        border="none",
+        text_size=size,
+        min_lines=1,
+        max_lines=100,
+    )
+
 def main(page: ft.Page):
     page.title = "PNG Image Viewer"
     page.window_width  = 1440
@@ -49,7 +60,20 @@ def main(page: ft.Page):
                             k, v = text.split("::", 1)
                             metadata_text.controls.append(ft.Text(f"{k}: {v}"))
                         else:
-                            metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
+                            #stable diffusionで作られた画像に特化したつくりにする
+                            #print(text)
+                            positive_index = text.find('parameters')
+                            negative_index = text.find('Negative prompt: ')
+                            anothers_index = text.find('Steps: ')
+                            if positive_index != -1:
+                                #print(positive_index)
+                                #print(negative_index)
+                                #print(anothers_index)
+                                metadata_text.controls.append(make_copyable_text(f"<Prompt>\n{text[positive_index+11:negative_index].strip()}"))
+                                metadata_text.controls.append(make_copyable_text(f"<Negative Prompt>\n{text[negative_index+17:anothers_index].strip()}"))
+                                metadata_text.controls.append(make_copyable_text(f"<Other info>\nSteps: {text[anothers_index+7:].strip().replace(", ","\n")}"))
+                            else:
+                                metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
                     elif ctype in ("iTXt", "zTXt"):
                         metadata_text.controls.append(ft.Text(f"{ctype}: あり"))
 
@@ -69,7 +93,11 @@ def main(page: ft.Page):
         page.update()
 
     # ── 中央：画像表示 ──
-    image_view = ft.Image(src="", fit=ft.ImageFit.CONTAIN, expand=True)
+    image_view = ft.Image(
+        src="", 
+        fit=ft.ImageFit.CONTAIN, 
+        expand=True
+    )
 
     # ── 左ペイン ──
     current_path_text = ft.Text("", size=12, italic=True, color=ft.Colors.OUTLINE)
