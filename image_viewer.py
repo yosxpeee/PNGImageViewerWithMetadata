@@ -120,7 +120,6 @@ def main(page: ft.Page):
     def navigate_to(path: str):
         if page.history_index + 1 < len(page.navigation_history):
             page.navigation_history = page.navigation_history[:page.history_index + 1]
-        
         page.navigation_history.append(path)
         page.history_index += 1
         refresh_directory(path)
@@ -153,33 +152,9 @@ def main(page: ft.Page):
     # ウインドウイベントの指定
     page.window.on_event = window_event
 
-    def apply_theme():
-        theme_colors = ThemeColors.dark() if settings["dark_theme"] else ThemeColors.light()
-        page.theme_mode = ft.ThemeMode.DARK if settings["dark_theme"] else ft.ThemeMode.LIGHT
-        page.bgcolor = theme_colors["bg_main"]
-        # 中央パネル
-        center_panel.bgcolor = theme_colors["bg_main"]
-        # 左パネル
-        left_panel.bgcolor = theme_colors["bg_panel"]
-        left_panel.border = ft.border.all(1, theme_colors["divider"])
-        # 右パネル
-        right_panel.bgcolor = theme_colors["bg_panel"]
-        right_panel.border = ft.border.all(1, theme_colors["divider"])
-        # テキスト系
-        current_path_text.color = theme_colors["text_secondary"]
-        for ctrl in page.controls:
-            if isinstance(ctrl, ft.Row):
-                for c in ctrl.controls:
-                    _walk_and_color(c)
-        # メタデータエリアの区切り線、テキスト
-        if metadata_text.controls:
-            for c in metadata_text.controls:
-                if isinstance(c, ft.Divider):
-                    c.color = theme_colors["divider"]
-                if isinstance(c, ft.Text):
-                    if c.value == "PNG メタデータ" or c.value == "ファイル情報":
-                        c.color = theme_colors["meta_secondary_title"]
-        page.update()
+    ####################
+    # テーマ変更処理
+    ####################
     def _walk_and_color(control):
         """再帰的に色を適用（必要に応じて追加）"""
         if hasattr(control, "color") and control.color in (ft.Colors.BLACK, ft.Colors.WHITE, ft.Colors.OUTLINE):
@@ -194,6 +169,34 @@ def main(page: ft.Page):
         if hasattr(control, "controls"):
             for child in control.controls:
                 _walk_and_color(child)
+    def apply_theme():
+        theme_colors = ThemeColors.dark() if settings["dark_theme"] else ThemeColors.light()
+        page.theme_mode = ft.ThemeMode.DARK if settings["dark_theme"] else ft.ThemeMode.LIGHT
+        page.bgcolor = theme_colors["bg_main"]
+        # 中央パネル
+        center_panel.bgcolor = theme_colors["bg_main"]
+        # 左パネル
+        left_panel.bgcolor = theme_colors["bg_panel"]
+        left_panel.border = ft.border.all(1, theme_colors["divider"])
+        # 右パネル
+        right_panel.bgcolor = theme_colors["bg_panel"]
+        right_panel.border = ft.border.all(1, theme_colors["divider"])
+        # 汎用テキスト系
+        current_path_text.color = theme_colors["text_secondary"]
+        for ctrl in page.controls:
+            if isinstance(ctrl, ft.Row):
+                for c in ctrl.controls:
+                    _walk_and_color(c)
+        # メタデータエリアの区切り線と固有のテキスト
+        if metadata_text.controls:
+            for c in metadata_text.controls:
+                if isinstance(c, ft.Divider):
+                    c.color = theme_colors["divider"]
+                if isinstance(c, ft.Text):
+                    # 変えないと見にくくなるものだけ変更
+                    if c.value == "PNG メタデータ" or c.value == "ファイル情報":
+                        c.color = theme_colors["meta_secondary_title"]
+        page.update()
 
     ####################
     # 左ペインの処理
