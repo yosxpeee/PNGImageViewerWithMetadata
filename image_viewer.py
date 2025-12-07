@@ -14,28 +14,14 @@ import time
 import win32api # type: ignore
 import win32con # type: ignore
 
-#パーツ：コピペできるテキスト表示領域
-def make_copyable_text(value: str, size=12):
-    return ft.TextField(
-        value=value,
-        read_only=True,
-        multiline=True,
-        border="none",
-        text_size=size,
-        min_lines=1,
-        max_lines=100,
-    )
-
-#メイン関数
+####################
+# メイン関数
+####################
 def main(page: ft.Page):
-    page.title = "PNG Image Viewer with Metadata"
-    page.window.min_width = 1024
-    page.window.min_height = 576
-    page.window.width  = 1440
-    page.window.height = 810
-    page.theme_mode = ft.ThemeMode.SYSTEM
-    page.padding = 0
-
+    ####################
+    # 各種イベント処理
+    ####################
+    # イベント処理：テキストをクリップボードへコピー
     def copy_to_clipboard(text: str, name: str = "テキスト"):
         page.set_clipboard(text)
         snack = ft.SnackBar(
@@ -46,15 +32,40 @@ def main(page: ft.Page):
         page.overlay.append(snack)
         snack.open = True
         page.update()
-
+    # イベント処理：戻る
+    def go_back():
+        if page.history_index > 0:
+            page.history_index -= 1
+            refresh_directory(page.navigation_history[page.history_index])
     async def async_go_back():
         go_back()
         page.update()
-
+    # イベント処理：進む
+    def go_forward():
+        if page.history_index + 1 < len(page.navigation_history):
+            page.history_index += 1
+            refresh_directory(page.navigation_history[page.history_index])
     async def async_go_forward():
         go_forward()
         page.update()
-
+    # イベント処理：履歴のナビゲート
+    def navigate_to(path: str):
+        if page.history_index + 1 < len(page.navigation_history):
+            page.navigation_history = page.navigation_history[:page.history_index + 1]
+        
+        page.navigation_history.append(path)
+        page.history_index += 1
+        refresh_directory(path)
+    # イベント処理：マウス
+    def on_mouse_event(e: ft.MouseEvent):
+        print(e.button)
+        if e.button == ft.MouseButton.BACK:
+            print("戻る")
+            go_back()
+        elif e.button == ft.MouseButton.FORWARD:
+            print("進む")
+            go_forward()
+    # イベントリスナー：マウス
     def start_mouse_back_forward_listener():
         if not win32api:
             return
@@ -73,51 +84,93 @@ def main(page: ft.Page):
                 time.sleep(0.01)
         threading.Thread(target=listener, daemon=True).start()
 
-    # 起動時にリスナー開始
-    start_mouse_back_forward_listener()
-
-    page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
-    page.history_index = 0                 # 現在の位置
-
-    def navigate_to(path: str):
-        if page.history_index + 1 < len(page.navigation_history):
-            page.navigation_history = page.navigation_history[:page.history_index + 1]
-        
-        page.navigation_history.append(path)
-        page.history_index += 1
-        refresh_directory(path)
-
-    def go_back():
-        if page.history_index > 0:
-            page.history_index -= 1
-            refresh_directory(page.navigation_history[page.history_index])
-
-    def go_forward():
-        if page.history_index + 1 < len(page.navigation_history):
-            page.history_index += 1
-            refresh_directory(page.navigation_history[page.history_index])
-
-    def on_mouse_event(e: ft.MouseEvent):
-        print(e.button)
-        if e.button == ft.MouseButton.BACK:
-            print("戻る")
-            go_back()
-        elif e.button == ft.MouseButton.FORWARD:
-            print("進む")
-            go_forward()
-
-    page.on_mouse_event = on_mouse_event
-
-    # ── 右ペイン：メタデータ ──
-    metadata_text = ft.Column([ft.Text("画像を選択してください", size=18)], scroll=ft.ScrollMode.AUTO, expand=True)
-
+    ####################
+    # 右ペインの処理
+    ####################
     def update_metadata(image_path: str):
+        # パーツ：コピペできるテキスト表示領域
+        def make_copyable_text(value: str, size=12):
+            return ft.TextField(
+                value=value,
+                read_only=True,
+                multiline=True,
+                border="none",
+                text_size=size,
+                min_lines=1,
+                max_lines=100,
+            )
+        # プロンプト表示領域
+        def prompt_textarea():
+            metadata_text.controls.append(
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("プロンプト", weight=ft.FontWeight.BOLD, size=14),
+                        ft.Container(expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.COPY,
+                            icon_size=14,
+                            tooltip="プロンプトをコピー",
+                            on_click=lambda e: copy_to_clipboard(prompt_text, "プロンプト")
+                        )
+                    ]),
+                    padding=ft.padding.only(top=0, bottom=0),
+                    border=ft.border.only(
+                        top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                        bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
+                    ),
+                )
+            )
+            metadata_text.controls.append(make_copyable_text(prompt_text, size=11))
+        # ネガティブプロンプト表示領域
+        def negative_textarea():
+            metadata_text.controls.append(
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("ネガティブプロンプト", weight=ft.FontWeight.BOLD, size=14),
+                        ft.Container(expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.COPY,
+                            icon_size=14,
+                            tooltip="ネガティブプロンプトをコピー",
+                            on_click=lambda e: copy_to_clipboard(negative_text, "ネガティブプロンプト")
+                        )
+                    ]),
+                    padding=ft.padding.only(top=0, bottom=0),
+                    border=ft.border.only(
+                        top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                        bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
+                    ),
+                )
+            )
+            metadata_text.controls.append(make_copyable_text(negative_text, size=11))
+        #その他情報表示領域
+        def other_textarea():
+            metadata_text.controls.append(
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("その他情報", weight=ft.FontWeight.BOLD, size=14),
+                        ft.Container(expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.COPY,
+                            icon_size=14,
+                            tooltip="その他情報をコピー",
+                            on_click=lambda e: copy_to_clipboard(f"Steps: {other_info}", "その他情報")
+                        )
+                    ]),
+                    padding=ft.padding.only(top=0, bottom=0),
+                    border=ft.border.only(
+                        top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                        bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
+                    ),
+                )
+            )
+            metadata_text.controls.append(make_copyable_text(f"Steps: {other_info}", size=11))
+
         metadata_text.controls.clear()
         if not image_path:
             metadata_text.controls.append(ft.Text("画像を選択してください"))
             page.update()
             return
-
         try:
             stat = os.stat(image_path)
             size_kb = stat.st_size / 1024
@@ -131,7 +184,6 @@ def main(page: ft.Page):
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16),
             ])
-
             # tEXt / zTXt / iTXt
             with open(image_path, "rb") as f:
                 reader = png.Reader(file=f)
@@ -149,126 +201,30 @@ def main(page: ft.Page):
                             if positive_index != -1:
                                 #Stable Diffusion WebUIで作られたもの
                                 if negative_index == -1:
-                                    # ネガプロがないもの（Fluxなど）
+                                    # ネガプロがないもの(Fluxなど)
                                     prompt_text = text[positive_index+11:anothers_index].strip()
                                     other_info = text[anothers_index+7:].strip().replace(", ", "\n")
                                     # プロンプト
-                                    metadata_text.controls.append(
-                                        ft.Container(
-                                            content=ft.Row([
-                                                ft.Text("プロンプト", weight=ft.FontWeight.BOLD, size=14),
-                                                ft.Container(expand=True),
-                                                ft.IconButton(
-                                                    icon=ft.Icons.COPY,
-                                                    icon_size=14,
-                                                    tooltip="プロンプトをコピー",
-                                                    on_click=lambda e: copy_to_clipboard(prompt_text, "プロンプト")
-                                                )
-                                            ]),
-                                            padding=ft.padding.only(top=0, bottom=0),
-                                            border=ft.border.only(
-                                                top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                                                bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
-                                            ),
-                                        )
-                                    )
-                                    metadata_text.controls.append(make_copyable_text(prompt_text, size=11))
+                                    prompt_textarea()
                                     # その他情報
-                                    metadata_text.controls.append(
-                                        ft.Container(
-                                            content=ft.Row([
-                                                ft.Text("その他情報", weight=ft.FontWeight.BOLD, size=14),
-                                                ft.Container(expand=True),
-                                                ft.IconButton(
-                                                    icon=ft.Icons.COPY,
-                                                    icon_size=14,
-                                                    tooltip="その他情報をコピー",
-                                                    on_click=lambda e: copy_to_clipboard(f"Steps: {other_info}", "その他情報")
-                                                )
-                                            ]),
-                                            padding=ft.padding.only(top=0, bottom=0),
-                                            border=ft.border.only(
-                                                top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                                                bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
-                                            ),
-                                        )
-                                    )
-                                    metadata_text.controls.append(make_copyable_text(f"Steps: {other_info}", size=11))
+                                    other_textarea()
                                 else:
-                                    #ネガプロがあるもの（IL系など）
+                                    #ネガプロがあるもの(IL系など)
                                     prompt_text = text[positive_index+11:negative_index].strip()
                                     negative_text = text[negative_index+17:anothers_index].strip()
                                     other_info = text[anothers_index+7:].strip().replace(", ", "\n")
                                     # プロンプト
-                                    metadata_text.controls.append(
-                                        ft.Container(
-                                            content=ft.Row([
-                                                ft.Text("プロンプト", weight=ft.FontWeight.BOLD, size=14),
-                                                ft.Container(expand=True),
-                                                ft.IconButton(
-                                                    icon=ft.Icons.COPY,
-                                                    icon_size=14,
-                                                    tooltip="プロンプトをコピー",
-                                                    on_click=lambda e: copy_to_clipboard(prompt_text, "プロンプト")
-                                                )
-                                            ]),
-                                            padding=ft.padding.only(top=0, bottom=0),
-                                            border=ft.border.only(
-                                                top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                                                bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
-                                            ),
-                                        )
-                                    )
-                                    metadata_text.controls.append(make_copyable_text(prompt_text, size=11))
+                                    prompt_textarea()
                                     # ネガティブプロンプト
-                                    metadata_text.controls.append(
-                                        ft.Container(
-                                            content=ft.Row([
-                                                ft.Text("ネガティブプロンプト", weight=ft.FontWeight.BOLD, size=14),
-                                                ft.Container(expand=True),
-                                                ft.IconButton(
-                                                    icon=ft.Icons.COPY,
-                                                    icon_size=14,
-                                                    tooltip="ネガティブプロンプトをコピー",
-                                                    on_click=lambda e: copy_to_clipboard(negative_text, "ネガティブプロンプト")
-                                                )
-                                            ]),
-                                            padding=ft.padding.only(top=0, bottom=0),
-                                            border=ft.border.only(
-                                                top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                                                bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
-                                            ),
-                                        )
-                                    )
-                                    metadata_text.controls.append(make_copyable_text(negative_text, size=11))
+                                    negative_textarea()
                                     # その他情報
-                                    metadata_text.controls.append(
-                                        ft.Container(
-                                            content=ft.Row([
-                                                ft.Text("その他情報", weight=ft.FontWeight.BOLD, size=14),
-                                                ft.Container(expand=True),
-                                                ft.IconButton(
-                                                    icon=ft.Icons.COPY,
-                                                    icon_size=14,
-                                                    tooltip="その他情報をコピー",
-                                                    on_click=lambda e: copy_to_clipboard(f"Steps: {other_info}", "その他情報")
-                                                )
-                                            ]),
-                                            padding=ft.padding.only(top=0, bottom=0),
-                                            border=ft.border.only(
-                                                top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                                                bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
-                                            ),
-                                        )
-                                    )
-                                    metadata_text.controls.append(make_copyable_text(f"Steps: {other_info}", size=11))
+                                    other_textarea()
                             else:
                                 #それ以外
                                 metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
                     elif ctype in ("iTXt", "zTXt"):
                         metadata_text.controls.append(ft.Text(f"{ctype}: あり"))
-
-            # IHDR（画像サイズなど）
+            # IHDR(画像サイズなど)
             reader = png.Reader(filename=image_path)
             w, h, _, info = reader.read()
             metadata_text.controls.extend([
@@ -283,19 +239,12 @@ def main(page: ft.Page):
             metadata_text.controls.append(ft.Text(f"エラー: {e}", color="red"))
         page.update()
 
-    # ── 中央：画像表示 ──
-    image_view = ft.Image(
-        src="", 
-        fit=ft.ImageFit.CONTAIN, 
-        expand=True
-    )
-
-    # ── 左ペイン ──
-    current_path_text = ft.Text("", size=12, italic=True, color=ft.Colors.OUTLINE)
-    dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
-
+    ####################
+    # 左ペインの処理
+    ####################
     # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
-    def make_item(name: str, icon, path: str, is_folder=False):
+    def make_list_item(name: str, icon, path: str, is_folder=False):
+        #クリック時のイベントハンドラ
         def on_click_handler(e):
             if path == "<DRIVES>":
                 show_drives()
@@ -303,6 +252,10 @@ def main(page: ft.Page):
                 navigate_to(path)
             else:
                 select_image(path)
+        #ホバーエフェクト
+        def mli_hover(e):
+            container.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == "true" else None
+            container.update()
 
         container = ft.Container(
             content=ft.Row([
@@ -316,16 +269,16 @@ def main(page: ft.Page):
             ink=True,
             on_click=on_click_handler,
         )
-
-        def hover(e):
-            container.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == "true" else None
-            container.update()
-        container.on_hover = hover
+        container.on_hover = mli_hover
         return container
-
+    # ディレクトリ情報更新
     def refresh_directory(path: str):
-        dir_list.controls.clear()
+        # ホバーエフェクト
+        def rd_hover(e):
+            back.bgcolor = ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY) if e.data == "true" else None
+            back.update()
 
+        dir_list.controls.clear()
         # ドライブ一覧の特別処理
         if path == "<DRIVES>":
             current_path_text.value = "ドライブを選択してください"
@@ -333,13 +286,11 @@ def main(page: ft.Page):
                 drive = f"{letter}:\\"
                 if os.path.exists(drive):
                     label = win32api.GetVolumeInformation(drive)[0] or "ドライブ"
-                    dir_list.controls.append(make_item(f"{drive} [{label}]", ft.Icons.STORAGE, drive, True))
+                    dir_list.controls.append(make_list_item(f"{drive} [{label}]", ft.Icons.STORAGE, drive, True))
             page.update()
             return
-
         current_path_text.value = f"現在: {path}"
         p = Path(path)
-
         # ドライブ一覧に戻る
         back = ft.Container(
             content=ft.Row([
@@ -353,44 +304,70 @@ def main(page: ft.Page):
             ink=True,
             on_click=lambda e: navigate_to("<DRIVES>"),
         )
-        def h(e):
-            back.bgcolor = ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY) if e.data == "true" else None
-            back.update()
-        back.on_hover = h
+        back.on_hover = rd_hover
         dir_list.controls.append(back)
         dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),)
-
         # 親フォルダ
         if p.parent != p:
-            dir_list.controls.append(make_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, str(p.parent), True))
+            dir_list.controls.append(make_list_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, str(p.parent), True))
 
         try:
             for item in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
                 if item.is_dir():
-                    dir_list.controls.append(make_item(item.name + "/", ft.Icons.FOLDER, str(item), True))
+                    dir_list.controls.append(make_list_item(item.name + "/", ft.Icons.FOLDER, str(item), True))
                 elif item.suffix.lower() == ".png":
-                    dir_list.controls.append(make_item(item.name, ft.Icons.IMAGE, str(item), False))
+                    dir_list.controls.append(make_list_item(item.name, ft.Icons.IMAGE, str(item), False))
         except PermissionError:
             dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
-
         page.update()
-
+    # 画像選択
     def select_image(path: str):
         image_view.src = path
         update_metadata(path)
         page.update()
-
+    # ドライブ一覧表示
     def show_drives():
         # 履歴に追加してrefresh_directoryに任せる
         navigate_to("<DRIVES>")
 
+    ####################
+    # 主処理開始
+    ####################
+    # 各種パラメータ設定
+    page.title = "PNG Image Viewer with Metadata"
+    page.window.min_width = 1024
+    page.window.min_height = 576
+    page.window.width  = 1440
+    page.window.height = 810
+    page.theme_mode = ft.ThemeMode.SYSTEM
+    page.padding = 0
+    page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
+    page.history_index = 0                 # 現在の位置
+    page.on_mouse_event = on_mouse_event   # マウスイベントの指定
+
+    # 起動時にイベントリスナー開始
+    start_mouse_back_forward_listener()
+
+    # ── 右ペイン：メタデータ ──
+    metadata_text = ft.Column([ft.Text("画像を選択してください", size=18)], scroll=ft.ScrollMode.AUTO, expand=True)
+
+    # ── 中央：画像表示 ──
+    image_view = ft.Image(
+        src="", 
+        fit=ft.ImageFit.CONTAIN, 
+        expand=True
+    )
+
+    # ── 左ペイン：ファイルブラウザ ──
+    current_path_text = ft.Text("", size=12, italic=True, color=ft.Colors.OUTLINE)
+    dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
     # 起動時にドライブ一覧表示
     show_drives()
 
-    # ── 最終レイアウト（サイドパネル真っ白）──
+    # ── 最終レイアウト(サイドパネル：白)──
     page.add(
         ft.Row([
-            # 左：白背景
+            # 左：白背景(ファイルブラウザ)
             ft.Container(
                 content=ft.Column([
                     ft.Row([ft.Icon(ft.Icons.EXPLORE), ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD)]),
@@ -410,7 +387,7 @@ def main(page: ft.Page):
 
             ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT),
 
-            # 右：白背景メタデータ
+            # 右：白背景(メタデータ)
             ft.Container(
                 content=ft.Column([
                     ft.Text("メタデータ", weight=ft.FontWeight.BOLD, size=18),
@@ -425,4 +402,5 @@ def main(page: ft.Page):
         ], expand=True)
     )
 
+#起動処理
 ft.app(target=main)
