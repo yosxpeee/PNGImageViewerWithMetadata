@@ -136,9 +136,12 @@ def main(page: ft.Page):
                             anothers_index = text.find('Steps: ')
                             if positive_index != -1:
                                 #Stable Diffusion WebUIで作られたもの
-                                metadata_text.controls.append(make_copyable_text(f"<Prompt>\n{text[positive_index+11:negative_index].strip()}"))
-                                metadata_text.controls.append(make_copyable_text(f"<Negative Prompt>\n{text[negative_index+17:anothers_index].strip()}"))
-                                metadata_text.controls.append(make_copyable_text(f"<Other info>\nSteps: {text[anothers_index+7:].strip().replace(", ","\n")}"))
+                                metadata_text.controls.append(ft.Text(f"プロンプト", weight=ft.FontWeight.BOLD, size=12))
+                                metadata_text.controls.append(make_copyable_text(f"{text[positive_index+11:negative_index].strip()}"))
+                                metadata_text.controls.append(ft.Text(f"ネガティブプロンプト", weight=ft.FontWeight.BOLD, size=12))
+                                metadata_text.controls.append(make_copyable_text(f"{text[negative_index+17:anothers_index].strip()}"))
+                                metadata_text.controls.append(ft.Text(f"その他情報", weight=ft.FontWeight.BOLD, size=12))
+                                metadata_text.controls.append(make_copyable_text(f"Steps: {text[anothers_index+7:].strip().replace(", ","\n")}"))
                             else:
                                 #それ以外
                                 metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
@@ -206,8 +209,6 @@ def main(page: ft.Page):
         # ドライブ一覧の特別処理
         if path == "<DRIVES>":
             current_path_text.value = "ドライブを選択してください"
-            # ドライブ一覧に戻るボタン（今回は不要なので非表示）
-            # backボタンは作らない
             for letter in string.ascii_uppercase:
                 drive = f"{letter}:\\"
                 if os.path.exists(drive):
