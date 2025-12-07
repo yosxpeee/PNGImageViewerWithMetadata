@@ -168,23 +168,20 @@ def main(page: ft.Page):
 
         metadata_text.controls.clear()
         if not image_path:
-            metadata_text.controls.append(ft.Text("画像を選択してください"))
+            metadata_text.controls.extend([
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                ft.Text("画像を選択してください", size=18)
+            ])
             page.update()
             return
         try:
             stat = os.stat(image_path)
             size_kb = stat.st_size / 1024
-
             metadata_text.controls.extend([
-                ft.Text("ファイル情報", weight=ft.FontWeight.BOLD, size=16),
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                ft.Text(f"名前: {Path(image_path).name}"),
-                ft.Text(f"サイズ: {size_kb:.1f} KB"),
-                ft.Text(f"更新日時: {datetime.fromtimestamp(stat.st_mtime).strftime('%Y/%m/%d %H:%M')}"),
-                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16),
+                ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.TEAL_900),
             ])
-            # tEXt / zTXt / iTXt
+            # メタデータ(tEXt / zTXt / iTXt)
             with open(image_path, "rb") as f:
                 reader = png.Reader(file=f)
                 for chunk_type, data in reader.chunks():
@@ -224,13 +221,19 @@ def main(page: ft.Page):
                                 metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
                     elif ctype in ("iTXt", "zTXt"):
                         metadata_text.controls.append(ft.Text(f"{ctype}: あり"))
+            # ファイル情報
+            metadata_text.controls.extend([
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                ft.Text("ファイル情報", weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.TEAL_900),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                ft.Text(f"名前: {Path(image_path).name}"),
+                ft.Text(f"サイズ: {size_kb:.1f} KB"),
+                ft.Text(f"更新日時: {datetime.fromtimestamp(stat.st_mtime).strftime('%Y/%m/%d %H:%M')}"),
+            ])
             # IHDR(画像サイズなど)
             reader = png.Reader(filename=image_path)
             w, h, _, info = reader.read()
             metadata_text.controls.extend([
-                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                ft.Text("画像情報", weight=ft.FontWeight.BOLD, size=16),
-                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 ft.Text(f"幅 × 高さ: {w} × {h} px"),
                 ft.Text(f"ビット深度: {info.get('bitdepth')}"),
                 ft.Text(f"透明度: {'あり' if info.get('alpha') else 'なし'}"),
@@ -358,7 +361,11 @@ def main(page: ft.Page):
         expand=True
     )
     # ── 右ペイン：メタデータ ──
-    metadata_text = ft.Column([ft.Text("画像を選択してください", size=18)], scroll=ft.ScrollMode.AUTO, expand=True)
+    metadata_text = ft.Column([
+        ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+        ft.Text("画像を選択してください", size=18),
+        ], scroll=ft.ScrollMode.AUTO, expand=True
+    )
 
     # ── 最終レイアウト(サイドパネル：白)──
     page.add(
@@ -383,8 +390,7 @@ def main(page: ft.Page):
             # 右：白背景(メタデータ)
             ft.Container(
                 content=ft.Column([
-                    ft.Text("メタデータ", weight=ft.FontWeight.BOLD, size=18),
-                    ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                    ft.Text("画像情報", weight=ft.FontWeight.BOLD, size=18, color=ft.Colors.BLUE_ACCENT_200),
                     metadata_text,
                 ], expand=True),
                 bgcolor=ft.Colors.WHITE,
