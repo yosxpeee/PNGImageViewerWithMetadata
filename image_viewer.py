@@ -1,4 +1,8 @@
-# image_viewer_flet.py
+########################################
+# image_viewer.py
+#
+# 根幹は Grok 4.1 beta に作らせてみました。
+########################################
 import flet as ft
 import os
 from pathlib import Path
@@ -6,6 +10,7 @@ import string
 import png
 from datetime import datetime
 
+#パーツ：コピペできるテキスト表示領域
 def make_copyable_text(value: str, size=12):
     return ft.TextField(
         value=value,
@@ -17,6 +22,7 @@ def make_copyable_text(value: str, size=12):
         max_lines=100,
     )
 
+#メイン関数
 def main(page: ft.Page):
     page.title = "PNG Image Viewer"
     page.window_width  = 1440
@@ -60,19 +66,16 @@ def main(page: ft.Page):
                             k, v = text.split("::", 1)
                             metadata_text.controls.append(ft.Text(f"{k}: {v}"))
                         else:
-                            #stable diffusionで作られた画像に特化したつくりにする
-                            #print(text)
                             positive_index = text.find('parameters')
                             negative_index = text.find('Negative prompt: ')
                             anothers_index = text.find('Steps: ')
                             if positive_index != -1:
-                                #print(positive_index)
-                                #print(negative_index)
-                                #print(anothers_index)
+                                #Stable Diffusion WebUIで作られたもの
                                 metadata_text.controls.append(make_copyable_text(f"<Prompt>\n{text[positive_index+11:negative_index].strip()}"))
                                 metadata_text.controls.append(make_copyable_text(f"<Negative Prompt>\n{text[negative_index+17:anothers_index].strip()}"))
                                 metadata_text.controls.append(make_copyable_text(f"<Other info>\nSteps: {text[anothers_index+7:].strip().replace(", ","\n")}"))
                             else:
+                                #それ以外
                                 metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
                     elif ctype in ("iTXt", "zTXt"):
                         metadata_text.controls.append(ft.Text(f"{ctype}: あり"))
