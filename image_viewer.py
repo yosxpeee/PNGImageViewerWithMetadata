@@ -15,7 +15,6 @@ from PIL import Image
 import io
 import win32clipboard  # pywin32から
 from win32clipboard import CF_DIB, CF_BITMAP
-import struct
 import win32api # type: ignore
 import win32con # type: ignore
 
@@ -480,7 +479,6 @@ def main(page: ft.Page):
         content=image_view,
         on_secondary_tap_down=show_image_context_menu,
     )
-
     # ── 右ペイン：メタデータ ──
     metadata_text = ft.Column([
         ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
