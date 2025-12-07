@@ -384,9 +384,7 @@ def main(page: ft.Page):
                 border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
             ),
             # 中央：画像
-            ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT),
             ft.Container(image_view, alignment=ft.alignment.center, expand=2),
-            ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT),
             # 右：白背景(メタデータ)
             ft.Container(
                 content=ft.Column([
