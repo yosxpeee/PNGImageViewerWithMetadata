@@ -264,18 +264,18 @@ def main(page: ft.Page):
                 pixels = np.flipud(bgra).tobytes() # DIBはボトムアップ
                 header = struct.pack(
                     "<LllHHLLllLLllllLLllllLLLlLLLLLLLLL",
-                    BITMAPV5HEADER_SIZE,    # 0
-                    w, h, 1, 32,            # 4,8,12,14
-                    3, 0, 0, 0, 0, 0, 0,     # 16〜36
-                    0x00FF0000,             # 40 Red mask
-                    0x0000FF00,             # 44 Green mask
-                    0x000000FF,             # 48 Blue mask
-                    0xFF000000,             # 52 Alpha mask
-                    0x73524742,             # 56 LCS_sRGB
-                    0,0,0,0,0,0,0,0,0,       # 60-95  endpoints
-                    0,0,0,                  # 96-107 gamma
-                    0,                      # 108 intent
-                    0,0,0,0                 # 112-124 reserved
+                    BITMAPV5HEADER_SIZE, # 0
+                    w, h, 1, 32,         # 4,8,12,14
+                    3, 0, 0, 0, 0, 0, 0, # 16〜36
+                    0x00FF0000,          # 40 Red mask
+                    0x0000FF00,          # 44 Green mask
+                    0x000000FF,          # 48 Blue mask
+                    0xFF000000,          # 52 Alpha mask
+                    0x73524742,          # 56 LCS_sRGB
+                    0,0,0,0,0,0,0,0,0,   # 60-95  endpoints
+                    0,0,0,               # 96-107 gamma
+                    0,                   # 108 intent
+                    0,0,0,0              # 112-124 reserved
                 )
                 data = header + pixels
                 win32clipboard.OpenClipboard()
