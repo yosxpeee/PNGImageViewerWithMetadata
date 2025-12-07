@@ -310,7 +310,6 @@ def main(page: ft.Page):
         # 親フォルダ
         if p.parent != p:
             dir_list.controls.append(make_list_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, str(p.parent), True))
-
         try:
             for item in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
                 if item.is_dir():
@@ -348,21 +347,18 @@ def main(page: ft.Page):
     # 起動時にイベントリスナー開始
     start_mouse_back_forward_listener()
 
-    # ── 右ペイン：メタデータ ──
-    metadata_text = ft.Column([ft.Text("画像を選択してください", size=18)], scroll=ft.ScrollMode.AUTO, expand=True)
-
+    # ── 左ペイン：ファイルブラウザ ──
+    current_path_text = ft.Text("", size=12, italic=False, color=ft.Colors.OUTLINE)
+    dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+    show_drives() # 起動時にドライブ一覧表示
     # ── 中央：画像表示 ──
     image_view = ft.Image(
         src="", 
         fit=ft.ImageFit.CONTAIN, 
         expand=True
     )
-
-    # ── 左ペイン：ファイルブラウザ ──
-    current_path_text = ft.Text("", size=12, italic=True, color=ft.Colors.OUTLINE)
-    dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
-    # 起動時にドライブ一覧表示
-    show_drives()
+    # ── 右ペイン：メタデータ ──
+    metadata_text = ft.Column([ft.Text("画像を選択してください", size=18)], scroll=ft.ScrollMode.AUTO, expand=True)
 
     # ── 最終レイアウト(サイドパネル：白)──
     page.add(
