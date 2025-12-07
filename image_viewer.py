@@ -11,8 +11,8 @@ import png
 from datetime import datetime
 import threading
 import time
-import win32api
-import win32con
+import win32api # type: ignore
+import win32con # type: ignore
 
 #パーツ：コピペできるテキスト表示領域
 def make_copyable_text(value: str, size=12):
