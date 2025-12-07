@@ -9,6 +9,10 @@ from pathlib import Path
 import string
 import png
 from datetime import datetime
+import threading
+import time
+import win32api
+import win32con
 
 #パーツ：コピペできるテキスト表示領域
 def make_copyable_text(value: str, size=12):
@@ -30,20 +34,9 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.SYSTEM
     page.padding = 0
 
-    # ← これを追加！（ここから）
-    import threading
-    import time
-    try:
-        import win32api
-        import win32con
-    except ImportError:
-        print("警告: pywin32 がありません。マウス戻る/進むボタンは使えません。pip install pywin32")
-        win32api = None
-
-    # ここが重要！asyncで包む！
     async def async_go_back():
         go_back()
-        page.update()  # 画面更新もここで
+        page.update()
 
     async def async_go_forward():
         go_forward()
@@ -54,12 +47,12 @@ def main(page: ft.Page):
             return
         def listener():
             while True:
-                if win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:  # 戻る
-                    page.run_task(async_go_back)  # ここがポイント！安全にメインスレッドで実行
+                if win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:  # 戻るボタン
+                    page.run_task(async_go_back)  # 安全にメインスレッドで実行
                     while win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:
                         time.sleep(0.01)
                     time.sleep(0.08)
-                if win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:  # 進む
+                if win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:  # 進むボタン
                     page.run_task(async_go_forward)
                     while win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:
                         time.sleep(0.01)
@@ -69,10 +62,9 @@ def main(page: ft.Page):
 
     # 起動時にリスナー開始
     start_mouse_back_forward_listener()
-    # ← ここまで追加
 
-    page.navigation_history = ["<DRIVES>"]        # 訪問したフォルダの履歴
-    page.history_index = 0             # 現在の位置
+    page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
+    page.history_index = 0                 # 現在の位置
 
     def navigate_to(path: str):
         if page.history_index + 1 < len(page.navigation_history):
@@ -179,10 +171,10 @@ def main(page: ft.Page):
     current_path_text = ft.Text("", size=12, italic=True, color=ft.Colors.OUTLINE)
     dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
 
-    # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成（Flet 0.28.3）
+    # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
     def make_item(name: str, icon, path: str, is_folder=False):
         def on_click_handler(e):
-            if path == "<DRIVES>":  # ドライブ一覧に戻るボタン用（使わないけど念のため）
+            if path == "<DRIVES>":
                 show_drives()
             elif is_folder:
                 navigate_to(path)
@@ -199,7 +191,6 @@ def main(page: ft.Page):
             padding=ft.padding.symmetric(horizontal=1, vertical=1),
             border_radius=8,
             ink=True,
-            #on_click=lambda e: navigate_to(path) if is_folder else select_image(path),
             on_click=on_click_handler,
         )
 
@@ -212,7 +203,7 @@ def main(page: ft.Page):
     def refresh_directory(path: str):
         dir_list.controls.clear()
 
-        # ここを追加！ドライブ一覧の特別処理
+        # ドライブ一覧の特別処理
         if path == "<DRIVES>":
             current_path_text.value = "ドライブを選択してください"
             # ドライブ一覧に戻るボタン（今回は不要なので非表示）
@@ -220,14 +211,10 @@ def main(page: ft.Page):
             for letter in string.ascii_uppercase:
                 drive = f"{letter}:\\"
                 if os.path.exists(drive):
-                    try:
-                        import win32api
-                        label = win32api.GetVolumeInformation(drive)[0] or "ドライブ"
-                    except:
-                        label = "ドライブ"
+                    label = win32api.GetVolumeInformation(drive)[0] or "ドライブ"
                     dir_list.controls.append(make_item(f"{drive} [{label}]", ft.Icons.STORAGE, drive, True))
             page.update()
-            return  # ここで終了！
+            return
 
         current_path_text.value = f"現在: {path}"
         p = Path(path)
