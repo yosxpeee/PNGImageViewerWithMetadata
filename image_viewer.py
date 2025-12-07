@@ -11,6 +11,11 @@ import png
 from datetime import datetime
 import threading
 import time
+from PIL import Image
+import io
+import win32clipboard  # pywin32から
+from win32clipboard import CF_DIB, CF_BITMAP
+import struct
 import win32api # type: ignore
 import win32con # type: ignore
 
@@ -243,6 +248,117 @@ def main(page: ft.Page):
         page.update()
 
     ####################
+    # 中央ペインの処理
+    ####################
+    # クリップボードに画像をコピー
+    def copy_image_to_clipboard(image_path: str):
+        try:
+            img = Image.open(image_path)
+            # RGBに変換（透明度がある場合は背景白で合成）
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+
+            output = io.BytesIO()
+            img.save(output, format='BMP')
+            data = output.getvalue()[14:]  # BMPヘッダー14バイト除去
+            output.close()
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            win32clipboard.CloseClipboard()
+            # スナックバーで通知
+            snack = ft.SnackBar(
+                content=ft.Text("画像をクリップボードにコピーしました！", color=ft.Colors.WHITE),
+                bgcolor=ft.Colors.GREEN_700,
+                duration=2000,
+            )
+            page.overlay.append(snack)
+            snack.open = True
+            page.update()
+        except Exception as e:
+            snack = ft.SnackBar(
+                content=ft.Text(f"コピー失敗: {e}", color=ft.Colors.WHITE),
+                bgcolor=ft.Colors.RED_700,
+                duration=3000,
+            )
+            page.overlay.append(snack)
+            snack.open = True
+            page.update()
+    # 右クリックメニュー
+    def show_image_context_menu(e: ft.TapDownEvent):
+        if not image_view.src or not os.path.exists(image_view.src):
+            return
+        menu_x = e.global_x
+        menu_y = e.global_y
+        # 自前で作るコンテキストメニュー（ポップアップ風）
+        context_menu = ft.Container(
+            width=240,
+            bgcolor=ft.Colors.with_opacity(0.98, ft.Colors.SURFACE),
+            border_radius=8,
+            shadow=ft.BoxShadow(
+                blur_radius=16,
+                color=ft.Colors.with_opacity(0.25, ft.Colors.BLACK),
+                offset=(0, 4),
+            ),
+            padding=4,
+            content=ft.Column([
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.COPY, size=18),
+                    title=ft.Text("画像をクリップボードにコピー", size=12),
+                    on_click=lambda e: (
+                        copy_image_to_clipboard(image_view.src),
+                        page.overlay.remove(overlay),
+                        page.update()
+                    ),
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
+                    title=ft.Text("フォルダをエクスプローラーで開く", size=12),
+                    on_click=lambda e: (
+                        os.startfile(os.path.dirname(image_view.src)),
+                        page.overlay.remove(overlay),
+                        page.update()
+                    ),
+                ),
+                ft.Divider(height=1),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.CLOSE, size=18),
+                    title=ft.Text("キャンセル", size=12, color=ft.Colors.ERROR),
+                    on_click=lambda e: (
+                        page.overlay.remove(overlay),
+                        page.update()
+                    ),
+                ),
+            ], spacing=0),
+        )
+        # ポップアップとして表示（Stackでオーバーレイ）
+        overlay = ft.Stack([
+            ft.Container(
+                bgcolor=ft.Colors.TRANSPARENT,
+                on_click=lambda e: (
+                    page.overlay.remove(overlay),
+                    page.update()
+                ),
+                expand=True,
+            ),
+            ft.Container(
+                content=context_menu,
+                top=menu_y,
+                left=menu_x,
+                animate=ft.Animation(150, "decelerate"),
+            ),
+        ], expand=True)
+        page.overlay.append(overlay)
+        context_menu.open = True
+        page.update()
+
+    ####################
     # 左ペインの処理
     ####################
     # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
@@ -356,10 +472,15 @@ def main(page: ft.Page):
     show_drives() # 起動時にドライブ一覧表示
     # ── 中央：画像表示 ──
     image_view = ft.Image(
-        src="", 
-        fit=ft.ImageFit.CONTAIN, 
-        expand=True
+        src="",
+        fit=ft.ImageFit.CONTAIN,
+        expand=True,
     )
+    image_container = ft.GestureDetector(
+        content=image_view,
+        on_secondary_tap_down=show_image_context_menu,
+    )
+
     # ── 右ペイン：メタデータ ──
     metadata_text = ft.Column([
         ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
@@ -384,7 +505,7 @@ def main(page: ft.Page):
                 border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
             ),
             # 中央：画像
-            ft.Container(image_view, alignment=ft.alignment.center, expand=2),
+            ft.Container(image_container, alignment=ft.alignment.center, expand=2),
             # 右：白背景(メタデータ)
             ft.Container(
                 content=ft.Column([
