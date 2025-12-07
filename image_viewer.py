@@ -92,6 +92,247 @@ def main(page: ft.Page):
         threading.Thread(target=listener, daemon=True).start()
 
     ####################
+    # 左ペインの処理
+    ####################
+    # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
+    def make_list_item(name: str, icon, path: str, is_folder=False):
+        #クリック時のイベントハンドラ
+        def on_click_handler(e):
+            if path == "<DRIVES>":
+                show_drives()
+            elif is_folder:
+                navigate_to(path)
+            else:
+                select_image(path)
+        #ホバーエフェクト
+        def mli_hover(e):
+            container.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == "true" else None
+            container.update()
+
+        container = ft.Container(
+            content=ft.Row([
+                ft.Icon(icon, size=12),
+                ft.Text(name, expand=True, size=12),
+                ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=12, opacity=0.5),
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            height=24,
+            padding=ft.padding.symmetric(horizontal=1, vertical=1),
+            border_radius=8,
+            ink=True,
+            on_click=on_click_handler,
+        )
+        container.on_hover = mli_hover
+        return container
+    # ディレクトリ情報更新
+    def refresh_directory(path: str):
+        # ホバーエフェクト
+        def rd_hover(e):
+            back.bgcolor = ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY) if e.data == "true" else None
+            back.update()
+
+        dir_list.controls.clear()
+        # ドライブ一覧の特別処理
+        if path == "<DRIVES>":
+            current_path_text.value = "ドライブを選択してください"
+            for letter in string.ascii_uppercase:
+                drive = f"{letter}:\\"
+                if os.path.exists(drive):
+                    label = win32api.GetVolumeInformation(drive)[0] or "ドライブ"
+                    dir_list.controls.append(make_list_item(f"{drive} [{label}]", ft.Icons.STORAGE, drive, True))
+            page.update()
+            return
+        current_path_text.value = f"現在: {path}"
+        p = Path(path)
+        # ドライブ一覧に戻る
+        back = ft.Container(
+            content=ft.Row([
+                ft.Icon(ft.Icons.COMPUTER, size=12),
+                ft.Text("ドライブ一覧に戻る", expand=True, size=12),
+                ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=12, opacity=0.5),
+            ]),
+            height=24,
+            padding=ft.padding.symmetric(horizontal=1, vertical=1),
+            border_radius=8,
+            ink=True,
+            on_click=lambda e: navigate_to("<DRIVES>"),
+        )
+        back.on_hover = rd_hover
+        dir_list.controls.append(back)
+        dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),)
+        # 親フォルダ
+        if p.parent != p:
+            dir_list.controls.append(make_list_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, str(p.parent), True))
+        try:
+            for item in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+                if item.is_dir():
+                    dir_list.controls.append(make_list_item(item.name + "/", ft.Icons.FOLDER, str(item), True))
+                elif item.suffix.lower() == ".png":
+                    dir_list.controls.append(make_list_item(item.name, ft.Icons.IMAGE, str(item), False))
+        except PermissionError:
+            dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
+        page.update()
+    # 画像選択
+    def select_image(path: str):
+        image_view.src = path
+        update_metadata(path)
+        page.update()
+    # ドライブ一覧表示
+    def show_drives():
+        # 履歴に追加してrefresh_directoryに任せる
+        navigate_to("<DRIVES>")
+
+    ####################
+    # 中央ペインの処理
+    ####################
+    # クリップボードに画像をコピー（透明度あり/なし両対応）
+    def copy_image_to_clipboard(image_path: str, alpha: bool):
+        try:
+            if alpha == True:
+                img = Image.open(image_path).convert("RGBA")
+                w, h = img.size
+                arr = np.array(img)
+                bgra = arr[:, :, [2, 1, 0, 3]]     # RとBを入れ替え + Alpha最後
+                pixels = np.flipud(bgra).tobytes() # DIBはボトムアップ
+                header = struct.pack(
+                    "<LllHHLLllLLllllLLllllLLLlLLLLLLLLL",
+                    BITMAPV5HEADER_SIZE, # 0
+                    w, h, 1, 32,         # 4,8,12,14
+                    3, 0, 0, 0, 0, 0, 0, # 16〜36
+                    0x00FF0000,          # 40 Red mask
+                    0x0000FF00,          # 44 Green mask
+                    0x000000FF,          # 48 Blue mask
+                    0xFF000000,          # 52 Alpha mask
+                    0x73524742,          # 56 LCS_sRGB
+                    0,0,0,0,0,0,0,0,0,   # 60-95  endpoints
+                    0,0,0,               # 96-107 gamma
+                    0,                   # 108 intent
+                    0,0,0,0              # 112-124 reserved
+                )
+                data = header + pixels
+                win32clipboard.OpenClipboard()
+                win32clipboard.EmptyClipboard()
+                win32clipboard.SetClipboardData(win32clipboard.CF_DIBV5, data)
+            else:
+                img = Image.open(image_path)
+                # RGBに変換（透明度がある場合は背景白で合成）
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                output = io.BytesIO()
+                img.save(output, format='BMP')
+                data = output.getvalue()[14:]  # BMPヘッダー14バイト除去
+                output.close()
+                win32clipboard.OpenClipboard()
+                win32clipboard.EmptyClipboard()
+                win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            # PNGも同時登録
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            png_format = win32clipboard.RegisterClipboardFormat("PNG")
+            if png_format:
+                win32clipboard.SetClipboardData(png_format, buf.getvalue())
+            win32clipboard.CloseClipboard()
+            # スナックバーで通知
+            snack = ft.SnackBar(
+                content=ft.Text("画像をクリップボードにコピーしました！", color=ft.Colors.WHITE),
+                bgcolor=ft.Colors.GREEN_700,
+                duration=2000,
+            )
+            page.overlay.append(snack)
+            snack.open = True
+            page.update()
+        except Exception as e:
+            snack = ft.SnackBar(
+                content=ft.Text(f"コピー失敗: {e}", color=ft.Colors.WHITE),
+                bgcolor=ft.Colors.RED_700,
+                duration=3000,
+            )
+            page.overlay.append(snack)
+            snack.open = True
+            page.update()
+    # 右クリックメニュー
+    def show_image_context_menu(e: ft.TapDownEvent):
+        if not image_view.src or not os.path.exists(image_view.src):
+            return
+        menu_x = e.global_x
+        menu_y = e.global_y
+        # 自前で作るコンテキストメニュー（ポップアップ風）
+        context_menu = ft.Container(
+            width=240,
+            bgcolor=ft.Colors.with_opacity(0.98, ft.Colors.SURFACE),
+            border_radius=8,
+            shadow=ft.BoxShadow(
+                blur_radius=16,
+                color=ft.Colors.with_opacity(0.25, ft.Colors.BLACK),
+                offset=(0, 4),
+            ),
+            padding=4,
+            content=ft.Column([
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.COPY_ALL, size=18),
+                    title=ft.Text("画像をクリップボードにコピー\n(透明度維持)", size=12),
+                    on_click=lambda e: (
+                        copy_image_to_clipboard(image_view.src, True),
+                        page.overlay.remove(overlay),
+                        page.update()
+                    ),
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.COPY, size=18),
+                    title=ft.Text("画像をクリップボードにコピー\n(透明度なし)", size=12),
+                    on_click=lambda e: (
+                        copy_image_to_clipboard(image_view.src, False),
+                        page.overlay.remove(overlay),
+                        page.update()
+                    ),
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
+                    title=ft.Text("フォルダをエクスプローラーで開く", size=12),
+                    on_click=lambda e: (
+                        os.startfile(os.path.dirname(image_view.src)),
+                        page.overlay.remove(overlay),
+                        page.update()
+                    ),
+                ),
+                ft.Divider(height=1),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.CLOSE, size=18),
+                    title=ft.Text("キャンセル", size=12, color=ft.Colors.ERROR),
+                    on_click=lambda e: (
+                        page.overlay.remove(overlay),
+                        page.update()
+                    ),
+                ),
+            ], spacing=0),
+        )
+        # ポップアップとして表示（Stackでオーバーレイ）
+        overlay = ft.Stack([
+            ft.Container(
+                bgcolor=ft.Colors.TRANSPARENT,
+                on_click=lambda e: (
+                    page.overlay.remove(overlay),
+                    page.update()
+                ),
+                expand=True,
+            ),
+            ft.Container(
+                content=context_menu,
+                top=menu_y,
+                left=menu_x,
+                animate=ft.Animation(150, "decelerate"),
+            ),
+        ], expand=True)
+        page.overlay.append(overlay)
+        context_menu.open = True
+        page.update()
+
+    ####################
     # 右ペインの処理
     ####################
     # メタデータ表示の更新
@@ -249,247 +490,6 @@ def main(page: ft.Page):
         except Exception as e:
             metadata_text.controls.append(ft.Text(f"エラー: {e}", color="red"))
         page.update()
-
-    ####################
-    # 中央ペインの処理
-    ####################
-    # クリップボードに画像をコピー（透明度あり/なし両対応）
-    def copy_image_to_clipboard(image_path: str, alpha: bool):
-        try:
-            if alpha == True:
-                img = Image.open(image_path).convert("RGBA")
-                w, h = img.size
-                arr = np.array(img)
-                bgra = arr[:, :, [2, 1, 0, 3]]     # RとBを入れ替え + Alpha最後
-                pixels = np.flipud(bgra).tobytes() # DIBはボトムアップ
-                header = struct.pack(
-                    "<LllHHLLllLLllllLLllllLLLlLLLLLLLLL",
-                    BITMAPV5HEADER_SIZE, # 0
-                    w, h, 1, 32,         # 4,8,12,14
-                    3, 0, 0, 0, 0, 0, 0, # 16〜36
-                    0x00FF0000,          # 40 Red mask
-                    0x0000FF00,          # 44 Green mask
-                    0x000000FF,          # 48 Blue mask
-                    0xFF000000,          # 52 Alpha mask
-                    0x73524742,          # 56 LCS_sRGB
-                    0,0,0,0,0,0,0,0,0,   # 60-95  endpoints
-                    0,0,0,               # 96-107 gamma
-                    0,                   # 108 intent
-                    0,0,0,0              # 112-124 reserved
-                )
-                data = header + pixels
-                win32clipboard.OpenClipboard()
-                win32clipboard.EmptyClipboard()
-                win32clipboard.SetClipboardData(win32clipboard.CF_DIBV5, data)
-            else:
-                img = Image.open(image_path)
-                # RGBに変換（透明度がある場合は背景白で合成）
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    background = Image.new('RGB', img.size, (255, 255, 255))
-                    if img.mode == 'P':
-                        img = img.convert('RGBA')
-                    background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-                    img = background
-                elif img.mode != 'RGB':
-                    img = img.convert('RGB')
-                output = io.BytesIO()
-                img.save(output, format='BMP')
-                data = output.getvalue()[14:]  # BMPヘッダー14バイト除去
-                output.close()
-                win32clipboard.OpenClipboard()
-                win32clipboard.EmptyClipboard()
-                win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-            # PNGも同時登録
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            png_format = win32clipboard.RegisterClipboardFormat("PNG")
-            if png_format:
-                win32clipboard.SetClipboardData(png_format, buf.getvalue())
-            win32clipboard.CloseClipboard()
-            # スナックバーで通知
-            snack = ft.SnackBar(
-                content=ft.Text("画像をクリップボードにコピーしました！", color=ft.Colors.WHITE),
-                bgcolor=ft.Colors.GREEN_700,
-                duration=2000,
-            )
-            page.overlay.append(snack)
-            snack.open = True
-            page.update()
-        except Exception as e:
-            snack = ft.SnackBar(
-                content=ft.Text(f"コピー失敗: {e}", color=ft.Colors.WHITE),
-                bgcolor=ft.Colors.RED_700,
-                duration=3000,
-            )
-            page.overlay.append(snack)
-            snack.open = True
-            page.update()
-    # 右クリックメニュー
-    def show_image_context_menu(e: ft.TapDownEvent):
-        if not image_view.src or not os.path.exists(image_view.src):
-            return
-        menu_x = e.global_x
-        menu_y = e.global_y
-        # 自前で作るコンテキストメニュー（ポップアップ風）
-        context_menu = ft.Container(
-            width=240,
-            bgcolor=ft.Colors.with_opacity(0.98, ft.Colors.SURFACE),
-            border_radius=8,
-            shadow=ft.BoxShadow(
-                blur_radius=16,
-                color=ft.Colors.with_opacity(0.25, ft.Colors.BLACK),
-                offset=(0, 4),
-            ),
-            padding=4,
-            content=ft.Column([
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.COPY_ALL, size=18),
-                    title=ft.Text("画像をクリップボードにコピー\n(透明度維持)", size=12),
-                    on_click=lambda e: (
-                        copy_image_to_clipboard(image_view.src, True),
-                        page.overlay.remove(overlay),
-                        page.update()
-                    ),
-                ),
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.COPY, size=18),
-                    title=ft.Text("画像をクリップボードにコピー\n(透明度なし)", size=12),
-                    on_click=lambda e: (
-                        copy_image_to_clipboard(image_view.src, False),
-                        page.overlay.remove(overlay),
-                        page.update()
-                    ),
-                ),
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
-                    title=ft.Text("フォルダをエクスプローラーで開く", size=12),
-                    on_click=lambda e: (
-                        os.startfile(os.path.dirname(image_view.src)),
-                        page.overlay.remove(overlay),
-                        page.update()
-                    ),
-                ),
-                ft.Divider(height=1),
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.CLOSE, size=18),
-                    title=ft.Text("キャンセル", size=12, color=ft.Colors.ERROR),
-                    on_click=lambda e: (
-                        page.overlay.remove(overlay),
-                        page.update()
-                    ),
-                ),
-            ], spacing=0),
-        )
-        # ポップアップとして表示（Stackでオーバーレイ）
-        overlay = ft.Stack([
-            ft.Container(
-                bgcolor=ft.Colors.TRANSPARENT,
-                on_click=lambda e: (
-                    page.overlay.remove(overlay),
-                    page.update()
-                ),
-                expand=True,
-            ),
-            ft.Container(
-                content=context_menu,
-                top=menu_y,
-                left=menu_x,
-                animate=ft.Animation(150, "decelerate"),
-            ),
-        ], expand=True)
-        page.overlay.append(overlay)
-        context_menu.open = True
-        page.update()
-
-    ####################
-    # 左ペインの処理
-    ####################
-    # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
-    def make_list_item(name: str, icon, path: str, is_folder=False):
-        #クリック時のイベントハンドラ
-        def on_click_handler(e):
-            if path == "<DRIVES>":
-                show_drives()
-            elif is_folder:
-                navigate_to(path)
-            else:
-                select_image(path)
-        #ホバーエフェクト
-        def mli_hover(e):
-            container.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == "true" else None
-            container.update()
-
-        container = ft.Container(
-            content=ft.Row([
-                ft.Icon(icon, size=12),
-                ft.Text(name, expand=True, size=12),
-                ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=12, opacity=0.5),
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            height=24,
-            padding=ft.padding.symmetric(horizontal=1, vertical=1),
-            border_radius=8,
-            ink=True,
-            on_click=on_click_handler,
-        )
-        container.on_hover = mli_hover
-        return container
-    # ディレクトリ情報更新
-    def refresh_directory(path: str):
-        # ホバーエフェクト
-        def rd_hover(e):
-            back.bgcolor = ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY) if e.data == "true" else None
-            back.update()
-
-        dir_list.controls.clear()
-        # ドライブ一覧の特別処理
-        if path == "<DRIVES>":
-            current_path_text.value = "ドライブを選択してください"
-            for letter in string.ascii_uppercase:
-                drive = f"{letter}:\\"
-                if os.path.exists(drive):
-                    label = win32api.GetVolumeInformation(drive)[0] or "ドライブ"
-                    dir_list.controls.append(make_list_item(f"{drive} [{label}]", ft.Icons.STORAGE, drive, True))
-            page.update()
-            return
-        current_path_text.value = f"現在: {path}"
-        p = Path(path)
-        # ドライブ一覧に戻る
-        back = ft.Container(
-            content=ft.Row([
-                ft.Icon(ft.Icons.COMPUTER, size=12),
-                ft.Text("ドライブ一覧に戻る", expand=True, size=12),
-                ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=12, opacity=0.5),
-            ]),
-            height=24,
-            padding=ft.padding.symmetric(horizontal=1, vertical=1),
-            border_radius=8,
-            ink=True,
-            on_click=lambda e: navigate_to("<DRIVES>"),
-        )
-        back.on_hover = rd_hover
-        dir_list.controls.append(back)
-        dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),)
-        # 親フォルダ
-        if p.parent != p:
-            dir_list.controls.append(make_list_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, str(p.parent), True))
-        try:
-            for item in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
-                if item.is_dir():
-                    dir_list.controls.append(make_list_item(item.name + "/", ft.Icons.FOLDER, str(item), True))
-                elif item.suffix.lower() == ".png":
-                    dir_list.controls.append(make_list_item(item.name, ft.Icons.IMAGE, str(item), False))
-        except PermissionError:
-            dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
-        page.update()
-    # 画像選択
-    def select_image(path: str):
-        image_view.src = path
-        update_metadata(path)
-        page.update()
-    # ドライブ一覧表示
-    def show_drives():
-        # 履歴に追加してrefresh_directoryに任せる
-        navigate_to("<DRIVES>")
 
     ####################
     # 主処理開始
