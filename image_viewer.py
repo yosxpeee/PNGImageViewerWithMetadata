@@ -316,6 +316,7 @@ def main(page: ft.Page):
                 win32clipboard.OpenClipboard()
                 win32clipboard.EmptyClipboard()
                 win32clipboard.SetClipboardData(win32clipboard.CF_DIBV5, data)
+                done_msg = "(透明度なし)"
             else:
                 img = Image.open(image_path)
                 # RGBに変換（透明度がある場合は背景白で合成）
@@ -334,6 +335,7 @@ def main(page: ft.Page):
                 win32clipboard.OpenClipboard()
                 win32clipboard.EmptyClipboard()
                 win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+                done_msg = "(透明度なし)"
             # PNGも同時登録
             buf = io.BytesIO()
             img.save(buf, format="PNG")
@@ -343,7 +345,7 @@ def main(page: ft.Page):
             win32clipboard.CloseClipboard()
             # スナックバーで通知
             snack = ft.SnackBar(
-                content=ft.Text("画像をクリップボードにコピーしました！", color=ft.Colors.WHITE),
+                content=ft.Text("画像をクリップボードにコピーしました！"+done_msg, color=ft.Colors.WHITE),
                 bgcolor=ft.Colors.GREEN_700,
                 duration=2000,
             )
