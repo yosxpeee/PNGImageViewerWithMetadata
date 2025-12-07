@@ -319,7 +319,7 @@ def main(page: ft.Page):
                 win32clipboard.OpenClipboard()
                 win32clipboard.EmptyClipboard()
                 win32clipboard.SetClipboardData(win32clipboard.CF_DIBV5, data)
-                done_msg = "(透明度なし)"
+                done_msg = "(透明度あり)"
             else:
                 img = Image.open(image_path)
                 # RGBに変換（透明度がある場合は背景白で合成）
