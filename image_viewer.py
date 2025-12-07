@@ -10,6 +10,7 @@ import png
 import threading
 import time
 import struct
+import json
 import flet as ft
 import numpy as np
 from pathlib import Path
@@ -20,6 +21,8 @@ import win32api
 import win32con
 
 BITMAPV5HEADER_SIZE = 124
+SETTING_JSON_FILE = "viewer_settings.json"
+settings = {}
 
 ####################
 # メイン関数
@@ -28,6 +31,15 @@ def main(page: ft.Page):
     ####################
     # 各種イベント処理
     ####################
+    # イベント処理：ウインドウを閉じる
+    def window_event(e):
+        if e.data == "close":
+            #print("設定を保存します")
+            #print(settings)
+            with open(SETTING_JSON_FILE, 'w') as f:
+                json.dump(settings, f, indent=4)
+            page.window.prevent_close = False
+            page.window.close()
     # イベント処理：テキストをクリップボードへコピー
     def copy_to_clipboard(text: str, name: str = "テキスト"):
         page.set_clipboard(text)
@@ -39,6 +51,14 @@ def main(page: ft.Page):
         page.overlay.append(snack)
         snack.open = True
         page.update()
+    # イベント処理：テーマ切り替えのスイッチ
+    def toggle_theme(e):
+        if e.data == 'true':
+            settings["dark_theme"] = True
+        else:
+            settings["dark_theme"] = False
+        #print(settings["dark_theme"])
+        apply_theme()
     # イベント処理：戻る
     def go_back():
         if page.history_index > 0:
@@ -65,7 +85,7 @@ def main(page: ft.Page):
         refresh_directory(path)
     # イベント処理：マウス
     def on_mouse_event(e: ft.MouseEvent):
-        print(e.button)
+        #print(e.button)
         if e.button == ft.MouseButton.BACK:
             print("戻る")
             go_back()
@@ -94,6 +114,8 @@ def main(page: ft.Page):
     ####################
     # 左ペインの処理
     ####################
+    def apply_theme():
+        pass
     # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
     def make_list_item(name: str, icon, path: str, is_folder=False):
         #クリック時のイベントハンドラ
@@ -505,11 +527,26 @@ def main(page: ft.Page):
     page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
     page.history_index = 0                 # 現在の位置
     page.on_mouse_event = on_mouse_event   # マウスイベントの指定
+    page.window.prevent_close = True
+    page.window.on_event = window_event    # ウインドウイベント
 
     # 起動時にイベントリスナー開始
     start_mouse_back_forward_listener()
 
-    # ── 左ペイン：ファイルブラウザ ──
+    ####################
+    # 設定読み込み
+    ####################
+    if os.path.exists(SETTING_JSON_FILE):
+        #読む
+        with open(SETTING_JSON_FILE) as f:
+            settings = json.load(f)
+    else:
+        #なかったら初期設定をする
+        settings = {}
+        settings['dark_theme'] = False
+    print(settings)
+
+    # ── 左ペイン：テーマ切り替えスイッチ、ファイルブラウザ ──
     current_path_text = ft.Text("", size=12, italic=False, color=ft.Colors.OUTLINE)
     dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
     show_drives() # 起動時にドライブ一覧表示
@@ -536,6 +573,14 @@ def main(page: ft.Page):
             # 左：白背景(ファイルブラウザ)
             ft.Container(
                 content=ft.Column([
+                    ft.Switch(
+                        value=settings['dark_theme'],
+                        on_change=toggle_theme,
+                        label="ダークモード",
+                        label_position=ft.LabelPosition.LEFT,
+                        height=36,
+                    ),
+                    ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                     ft.Row([ft.Icon(ft.Icons.EXPLORE), ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD)]),
                     current_path_text,
                     ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
