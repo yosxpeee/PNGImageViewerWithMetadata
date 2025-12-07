@@ -30,6 +30,79 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.SYSTEM
     page.padding = 0
 
+    # ← これを追加！（ここから）
+    import threading
+    import time
+    try:
+        import win32api
+        import win32con
+    except ImportError:
+        print("警告: pywin32 がありません。マウス戻る/進むボタンは使えません。pip install pywin32")
+        win32api = None
+
+    # ここが重要！asyncで包む！
+    async def async_go_back():
+        go_back()
+        page.update()  # 画面更新もここで
+
+    async def async_go_forward():
+        go_forward()
+        page.update()
+
+    def start_mouse_back_forward_listener():
+        if not win32api:
+            return
+        def listener():
+            while True:
+                if win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:  # 戻る
+                    page.run_task(async_go_back)  # ここがポイント！安全にメインスレッドで実行
+                    while win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:
+                        time.sleep(0.01)
+                    time.sleep(0.08)
+                if win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:  # 進む
+                    page.run_task(async_go_forward)
+                    while win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:
+                        time.sleep(0.01)
+                    time.sleep(0.08)
+                time.sleep(0.01)
+        threading.Thread(target=listener, daemon=True).start()
+
+    # 起動時にリスナー開始
+    start_mouse_back_forward_listener()
+    # ← ここまで追加
+
+    page.navigation_history = ["<DRIVES>"]        # 訪問したフォルダの履歴
+    page.history_index = 0             # 現在の位置
+
+    def navigate_to(path: str):
+        if page.history_index + 1 < len(page.navigation_history):
+            page.navigation_history = page.navigation_history[:page.history_index + 1]
+        
+        page.navigation_history.append(path)
+        page.history_index += 1
+        refresh_directory(path)
+
+    def go_back():
+        if page.history_index > 0:
+            page.history_index -= 1
+            refresh_directory(page.navigation_history[page.history_index])
+
+    def go_forward():
+        if page.history_index + 1 < len(page.navigation_history):
+            page.history_index += 1
+            refresh_directory(page.navigation_history[page.history_index])
+
+    def on_mouse_event(e: ft.MouseEvent):
+        print(e.button)
+        if e.button == ft.MouseButton.BACK:
+            print("戻る")
+            go_back()
+        elif e.button == ft.MouseButton.FORWARD:
+            print("進む")
+            go_forward()
+
+    page.on_mouse_event = on_mouse_event
+
     # ── 右ペイン：メタデータ ──
     metadata_text = ft.Column([ft.Text("画像を選択してください", size=18)], scroll=ft.ScrollMode.AUTO, expand=True)
 
@@ -108,6 +181,14 @@ def main(page: ft.Page):
 
     # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成（Flet 0.28.3）
     def make_item(name: str, icon, path: str, is_folder=False):
+        def on_click_handler(e):
+            if path == "<DRIVES>":  # ドライブ一覧に戻るボタン用（使わないけど念のため）
+                show_drives()
+            elif is_folder:
+                navigate_to(path)
+            else:
+                select_image(path)
+
         container = ft.Container(
             content=ft.Row([
                 ft.Icon(icon, size=12),
@@ -118,7 +199,8 @@ def main(page: ft.Page):
             padding=ft.padding.symmetric(horizontal=1, vertical=1),
             border_radius=8,
             ink=True,
-            on_click=lambda e: refresh_directory(path) if is_folder else select_image(path),
+            #on_click=lambda e: navigate_to(path) if is_folder else select_image(path),
+            on_click=on_click_handler,
         )
 
         def hover(e):
@@ -129,6 +211,24 @@ def main(page: ft.Page):
 
     def refresh_directory(path: str):
         dir_list.controls.clear()
+
+        # ここを追加！ドライブ一覧の特別処理
+        if path == "<DRIVES>":
+            current_path_text.value = "ドライブを選択してください"
+            # ドライブ一覧に戻るボタン（今回は不要なので非表示）
+            # backボタンは作らない
+            for letter in string.ascii_uppercase:
+                drive = f"{letter}:\\"
+                if os.path.exists(drive):
+                    try:
+                        import win32api
+                        label = win32api.GetVolumeInformation(drive)[0] or "ドライブ"
+                    except:
+                        label = "ドライブ"
+                    dir_list.controls.append(make_item(f"{drive} [{label}]", ft.Icons.STORAGE, drive, True))
+            page.update()
+            return  # ここで終了！
+
         current_path_text.value = f"現在: {path}"
         p = Path(path)
 
@@ -143,7 +243,7 @@ def main(page: ft.Page):
             padding=ft.padding.symmetric(horizontal=1, vertical=1),
             border_radius=8,
             ink=True,
-            on_click=lambda e: show_drives(),
+            on_click=lambda e: navigate_to("<DRIVES>"),
         )
         def h(e):
             back.bgcolor = ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY) if e.data == "true" else None
@@ -173,19 +273,8 @@ def main(page: ft.Page):
         page.update()
 
     def show_drives():
-        dir_list.controls.clear()
-        current_path_text.value = "ドライブを選択してください"
-
-        for letter in string.ascii_uppercase:
-            drive = f"{letter}:\\"
-            if os.path.exists(drive):
-                try:
-                    import win32api
-                    label = win32api.GetVolumeInformation(drive)[0] or "ドライブ"
-                except:
-                    label = "ドライブ"
-                dir_list.controls.append(make_item(f"{drive} [{label}]", ft.Icons.STORAGE, drive, True))
-        page.update()
+        # 履歴に追加してrefresh_directoryに任せる
+        navigate_to("<DRIVES>")
 
     # 起動時にドライブ一覧表示
     show_drives()
