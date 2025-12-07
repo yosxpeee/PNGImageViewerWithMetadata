@@ -82,6 +82,13 @@ def main(page: ft.Page):
                 json.dump(settings, f, indent=4)
             page.window.prevent_close = False
             page.window.close()
+    # イベント処理：テーマ切り替えのスイッチ
+    def toggle_theme(e):
+        if e.data == 'true':
+            settings["dark_theme"] = True
+        else:
+            settings["dark_theme"] = False
+        apply_theme()
     # イベント処理：テキストをクリップボードへコピー
     def copy_to_clipboard(text: str, name: str = "テキスト"):
         page.set_clipboard(text)
@@ -93,13 +100,13 @@ def main(page: ft.Page):
         page.overlay.append(snack)
         snack.open = True
         page.update()
-    # イベント処理：テーマ切り替えのスイッチ
-    def toggle_theme(e):
-        if e.data == 'true':
-            settings["dark_theme"] = True
-        else:
-            settings["dark_theme"] = False
-        apply_theme()
+    # イベント処理：履歴のナビゲート
+    def navigate_to(path: str):
+        if page.history_index + 1 < len(page.navigation_history):
+            page.navigation_history = page.navigation_history[:page.history_index + 1]
+        page.navigation_history.append(path)
+        page.history_index += 1
+        refresh_directory(path)
     # イベント処理：戻る
     def go_back():
         if page.history_index > 0:
@@ -116,13 +123,6 @@ def main(page: ft.Page):
     async def async_go_forward():
         go_forward()
         page.update()
-    # イベント処理：履歴のナビゲート
-    def navigate_to(path: str):
-        if page.history_index + 1 < len(page.navigation_history):
-            page.navigation_history = page.navigation_history[:page.history_index + 1]
-        page.navigation_history.append(path)
-        page.history_index += 1
-        refresh_directory(path)
     # イベント処理：マウス
     def on_mouse_event(e: ft.MouseEvent):
         if e.button == ft.MouseButton.BACK:
