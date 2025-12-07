@@ -22,20 +22,62 @@ import win32con
 
 BITMAPV5HEADER_SIZE = 124
 SETTING_JSON_FILE = "viewer_settings.json"
-settings = {}
+
+####################
+# カラーテーマ定義
+####################
+class ThemeColors:
+    @staticmethod
+    def light():
+        return {
+            "bg_main": ft.Colors.WHITE,
+            "bg_panel": ft.Colors.WHITE,
+            "text_primary": ft.Colors.BLACK,
+            "text_secondary": ft.Colors.OUTLINE,
+            "divider": ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE),
+            "hover": ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE),
+            "selected": ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY),
+            "surface": ft.Colors.SURFACE,
+            "meta_secondary_title": ft.Colors.TEAL_900,
+        }
+    @staticmethod
+    def dark():
+        return {
+            "bg_main": ft.Colors.with_opacity(0.98, "#0e0e0e"),   # ほぼ真っ黒
+            "bg_panel": ft.Colors.with_opacity(0.96, "#121212"),  # 少し明るめのカード
+            "text_primary": ft.Colors.WHITE,
+            "text_secondary": ft.Colors.with_opacity(0.7, ft.Colors.WHITE),
+            "divider": ft.Colors.with_opacity(0.3, ft.Colors.WHITE),
+            "hover": ft.Colors.with_opacity(0.12, ft.Colors.WHITE),
+            "selected": ft.Colors.with_opacity(0.22, ft.Colors.WHITE),
+            "surface": ft.Colors.with_opacity(0.98, "#1e1e1e"),
+            "meta_secondary_title": ft.Colors.TEAL_ACCENT_400,
+        }
 
 ####################
 # メイン関数
 ####################
 def main(page: ft.Page):
+    # 各種パラメータ設定
+    page.title = "PNG Image Viewer with Metadata"
+    page.window.min_width = 1024
+    page.window.min_height = 576
+    page.window.width  = 1440
+    page.window.height = 810
+    page.theme_mode = ft.ThemeMode.SYSTEM
+    page.padding = 0
+    page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
+    page.history_index = 0                 # 現在の位置
+    page.window.prevent_close = True
+    settings = {}
+    theme_colors = ThemeColors.light() #とりあえずの初期値
+
     ####################
     # 各種イベント処理
     ####################
     # イベント処理：ウインドウを閉じる
     def window_event(e):
         if e.data == "close":
-            #print("設定を保存します")
-            #print(settings)
             with open(SETTING_JSON_FILE, 'w') as f:
                 json.dump(settings, f, indent=4)
             page.window.prevent_close = False
@@ -57,7 +99,6 @@ def main(page: ft.Page):
             settings["dark_theme"] = True
         else:
             settings["dark_theme"] = False
-        #print(settings["dark_theme"])
         apply_theme()
     # イベント処理：戻る
     def go_back():
@@ -85,12 +126,9 @@ def main(page: ft.Page):
         refresh_directory(path)
     # イベント処理：マウス
     def on_mouse_event(e: ft.MouseEvent):
-        #print(e.button)
         if e.button == ft.MouseButton.BACK:
-            print("戻る")
             go_back()
         elif e.button == ft.MouseButton.FORWARD:
-            print("進む")
             go_forward()
     # イベントリスナー：マウス
     def start_mouse_back_forward_listener():
@@ -110,12 +148,56 @@ def main(page: ft.Page):
                     time.sleep(0.08)
                 time.sleep(0.01)
         threading.Thread(target=listener, daemon=True).start()
+    # マウスイベントの指定
+    page.on_mouse_event = on_mouse_event
+    # ウインドウイベントの指定
+    page.window.on_event = window_event
+
+    def apply_theme():
+        theme_colors = ThemeColors.dark() if settings["dark_theme"] else ThemeColors.light()
+        page.theme_mode = ft.ThemeMode.DARK if settings["dark_theme"] else ft.ThemeMode.LIGHT
+        page.bgcolor = theme_colors["bg_main"]
+        # 中央パネル
+        center_panel.bgcolor = theme_colors["bg_main"]
+        # 左パネル
+        left_panel.bgcolor = theme_colors["bg_panel"]
+        left_panel.border = ft.border.all(1, theme_colors["divider"])
+        # 右パネル
+        right_panel.bgcolor = theme_colors["bg_panel"]
+        right_panel.border = ft.border.all(1, theme_colors["divider"])
+        # テキスト系
+        current_path_text.color = theme_colors["text_secondary"]
+        for ctrl in page.controls:
+            if isinstance(ctrl, ft.Row):
+                for c in ctrl.controls:
+                    _walk_and_color(c)
+        # メタデータエリアの区切り線、テキスト
+        if metadata_text.controls:
+            for c in metadata_text.controls:
+                if isinstance(c, ft.Divider):
+                    c.color = theme_colors["divider"]
+                if isinstance(c, ft.Text):
+                    if c.value == "PNG メタデータ" or c.value == "ファイル情報":
+                        c.color = theme_colors["meta_secondary_title"]
+        page.update()
+    def _walk_and_color(control):
+        """再帰的に色を適用（必要に応じて追加）"""
+        if hasattr(control, "color") and control.color in (ft.Colors.BLACK, ft.Colors.WHITE, ft.Colors.OUTLINE):
+            if isinstance(control, ft.Text):
+                control.color = theme_colors["text_primary"] if control.weight == ft.FontWeight.BOLD else theme_colors["text_secondary"]
+        if hasattr(control, "bgcolor"):
+            if control == dir_list:
+                return
+            # ホバー用コンテナは別途処理
+            if isinstance(control, ft.Container) and control.ink:
+                pass
+        if hasattr(control, "controls"):
+            for child in control.controls:
+                _walk_and_color(child)
 
     ####################
     # 左ペインの処理
     ####################
-    def apply_theme():
-        pass
     # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
     def make_list_item(name: str, icon, path: str, is_folder=False):
         #クリック時のイベントハンドラ
@@ -128,7 +210,7 @@ def main(page: ft.Page):
                 select_image(path)
         #ホバーエフェクト
         def mli_hover(e):
-            container.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == "true" else None
+            container.bgcolor = theme_colors["hover"] if e.data == "true" else None
             container.update()
 
         container = ft.Container(
@@ -149,7 +231,7 @@ def main(page: ft.Page):
     def refresh_directory(path: str):
         # ホバーエフェクト
         def rd_hover(e):
-            back.bgcolor = ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY) if e.data == "true" else None
+            back.bgcolor = theme_colors["selected"] if e.data == "true" else None
             back.update()
 
         dir_list.controls.clear()
@@ -450,7 +532,7 @@ def main(page: ft.Page):
             size_kb = stat.st_size / 1024
             metadata_text.controls.extend([
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.TEAL_900),
+                ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16, color=theme_colors["meta_secondary_title"]),
             ])
             # メタデータ(tEXt / zTXt / iTXt)
             with open(image_path, "rb") as f:
@@ -495,7 +577,7 @@ def main(page: ft.Page):
             # ファイル情報
             metadata_text.controls.extend([
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                ft.Text("ファイル情報", weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.TEAL_900),
+                ft.Text(f"ファイル情報", weight=ft.FontWeight.BOLD, size=16, color=theme_colors["meta_secondary_title"]),
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 ft.Text(f"名前: {Path(image_path).name}"),
                 ft.Text(f"サイズ: {size_kb:.1f} KB"),
@@ -516,40 +598,29 @@ def main(page: ft.Page):
     ####################
     # 主処理開始
     ####################
-    # 各種パラメータ設定
-    page.title = "PNG Image Viewer with Metadata"
-    page.window.min_width = 1024
-    page.window.min_height = 576
-    page.window.width  = 1440
-    page.window.height = 810
-    page.theme_mode = ft.ThemeMode.SYSTEM
-    page.padding = 0
-    page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
-    page.history_index = 0                 # 現在の位置
-    page.on_mouse_event = on_mouse_event   # マウスイベントの指定
-    page.window.prevent_close = True
-    page.window.on_event = window_event    # ウインドウイベント
-
     # 起動時にイベントリスナー開始
     start_mouse_back_forward_listener()
 
-    ####################
     # 設定読み込み
-    ####################
     if os.path.exists(SETTING_JSON_FILE):
         #読む
         with open(SETTING_JSON_FILE) as f:
             settings = json.load(f)
     else:
         #なかったら初期設定をする
-        settings = {}
         settings['dark_theme'] = False
-    print(settings)
+    theme_colors = ThemeColors.dark() if settings['dark_theme'] else ThemeColors.light()
 
     # ── 左ペイン：テーマ切り替えスイッチ、ファイルブラウザ ──
+    theme_switch = ft.Switch(
+        value=settings["dark_theme"],
+        on_change=toggle_theme,
+        label="ダークモード",
+        label_position=ft.LabelPosition.LEFT,
+        height=36,
+    )
     current_path_text = ft.Text("", size=12, italic=False, color=ft.Colors.OUTLINE)
     dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
-    show_drives() # 起動時にドライブ一覧表示
     # ── 中央：画像表示 ──
     image_view = ft.Image(
         src="",
@@ -567,45 +638,46 @@ def main(page: ft.Page):
         ], scroll=ft.ScrollMode.AUTO, expand=True
     )
 
-    # ── 最終レイアウト(サイドパネル：白)──
+    # ── 最終レイアウト
+    left_panel = ft.Container(
+        content=ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.EXPLORE),
+                ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
+                ft.Container(expand=True),
+                theme_switch,
+            ]),
+            current_path_text,
+            ft.Divider(height=1),
+            dir_list,
+        ], expand=True),
+        padding=10,
+        width=340,
+    )
+    center_panel = ft.Container(
+        content=image_container,
+        alignment=ft.alignment.center,
+        expand=2,
+        bgcolor=theme_colors["bg_main"],
+    )
+    right_panel = ft.Container(
+        content=ft.Column([
+            ft.Text("画像情報", weight=ft.FontWeight.BOLD, size=18, color=ft.Colors.BLUE_ACCENT_200),
+            metadata_text,
+        ], expand=True),
+        padding=15,
+        width=400,
+    )
     page.add(
         ft.Row([
-            # 左：白背景(ファイルブラウザ)
-            ft.Container(
-                content=ft.Column([
-                    ft.Switch(
-                        value=settings['dark_theme'],
-                        on_change=toggle_theme,
-                        label="ダークモード",
-                        label_position=ft.LabelPosition.LEFT,
-                        height=36,
-                    ),
-                    ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                    ft.Row([ft.Icon(ft.Icons.EXPLORE), ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD)]),
-                    current_path_text,
-                    ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                    dir_list,
-                ], expand=True),
-                bgcolor=ft.Colors.WHITE,
-                padding=10,
-                width=340,
-                border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
-            ),
-            # 中央：画像
-            ft.Container(image_container, alignment=ft.alignment.center, expand=2),
-            # 右：白背景(メタデータ)
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("画像情報", weight=ft.FontWeight.BOLD, size=18, color=ft.Colors.BLUE_ACCENT_200),
-                    metadata_text,
-                ], expand=True),
-                bgcolor=ft.Colors.WHITE,
-                padding=15,
-                width=400,
-                border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
-            ),
-        ], expand=True)
+            left_panel,
+            center_panel,
+            right_panel,
+        ], expand=True, spacing=0)
     )
-
+    # 起動時にテーマ適用
+    apply_theme()
+    # 起動時にドライブ一覧表示
+    show_drives()
 #起動処理
 ft.app(target=main)
