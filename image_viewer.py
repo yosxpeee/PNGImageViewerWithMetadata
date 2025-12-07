@@ -28,9 +28,11 @@ def make_copyable_text(value: str, size=12):
 
 #メイン関数
 def main(page: ft.Page):
-    page.title = "PNG Image Viewer"
-    page.window_width  = 1440
-    page.window_height = 900
+    page.title = "PNG Image Viewer with Metadata"
+    page.window.min_width = 1024
+    page.window.min_height = 576
+    page.window.width  = 1440
+    page.window.height = 810
     page.theme_mode = ft.ThemeMode.SYSTEM
     page.padding = 0
 
@@ -241,7 +243,7 @@ def main(page: ft.Page):
         dir_list.controls.append(ft.Divider(height=1))
 
         # 親フォルダ
-        if p.parent != p and str(p.parent) != p.drive + "\\":
+        if p.parent != p:
             dir_list.controls.append(make_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, str(p.parent), True))
 
         try:
