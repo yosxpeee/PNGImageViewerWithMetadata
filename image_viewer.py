@@ -36,6 +36,17 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.SYSTEM
     page.padding = 0
 
+    def copy_to_clipboard(text: str, name: str = "テキスト"):
+        page.set_clipboard(text)
+        snack = ft.SnackBar(
+            content=ft.Text(f"{name}をコピーしました！"),
+            bgcolor=ft.Colors.GREEN_700,
+            duration=1500,
+        )
+        page.overlay.append(snack)
+        snack.open = True
+        page.update()
+
     async def async_go_back():
         go_back()
         page.update()
@@ -112,14 +123,13 @@ def main(page: ft.Page):
             size_kb = stat.st_size / 1024
 
             metadata_text.controls.extend([
-                ft.Text("ファイル情報", weight=ft.FontWeight.BOLD, size=12),
-                ft.Divider(height=1),
+                ft.Text("ファイル情報", weight=ft.FontWeight.BOLD, size=16),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 ft.Text(f"名前: {Path(image_path).name}"),
                 ft.Text(f"サイズ: {size_kb:.1f} KB"),
                 ft.Text(f"更新日時: {datetime.fromtimestamp(stat.st_mtime).strftime('%Y/%m/%d %H:%M')}"),
-                ft.Divider(height=1),
-                ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=12),
-                ft.Divider(height=1),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16),
             ])
 
             # tEXt / zTXt / iTXt
@@ -138,12 +148,75 @@ def main(page: ft.Page):
                             anothers_index = text.find('Steps: ')
                             if positive_index != -1:
                                 #Stable Diffusion WebUIで作られたもの
-                                metadata_text.controls.append(ft.Text(f"プロンプト", weight=ft.FontWeight.BOLD, size=12))
-                                metadata_text.controls.append(make_copyable_text(f"{text[positive_index+11:negative_index].strip()}"))
-                                metadata_text.controls.append(ft.Text(f"ネガティブプロンプト", weight=ft.FontWeight.BOLD, size=12))
-                                metadata_text.controls.append(make_copyable_text(f"{text[negative_index+17:anothers_index].strip()}"))
-                                metadata_text.controls.append(ft.Text(f"その他情報", weight=ft.FontWeight.BOLD, size=12))
-                                metadata_text.controls.append(make_copyable_text(f"Steps: {text[anothers_index+7:].strip().replace(", ","\n")}"))
+                                prompt_text = text[positive_index+11:negative_index].strip()
+                                negative_text = text[negative_index+17:anothers_index].strip()
+                                other_info = text[anothers_index+7:].strip().replace(", ", "\n")
+
+                                # プロンプト（隙間ゼロ）
+                                metadata_text.controls.append(
+                                    ft.Container(
+                                        content=ft.Row([
+                                            ft.Text("プロンプト", weight=ft.FontWeight.BOLD, size=14),
+                                            ft.Container(expand=True),
+                                            ft.IconButton(
+                                                icon=ft.Icons.COPY,
+                                                icon_size=14,
+                                                tooltip="プロンプトをコピー",
+                                                on_click=lambda e: copy_to_clipboard(prompt_text, "プロンプト")
+                                            )
+                                        ]),
+                                        padding=ft.padding.only(top=0, bottom=0),
+                                        border=ft.border.only(
+                                            top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                                            bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
+                                        ),
+                                    )
+                                )
+                                metadata_text.controls.append(make_copyable_text(prompt_text, size=11))
+
+                                # ネガティブプロンプト
+                                metadata_text.controls.append(
+                                    ft.Container(
+                                        content=ft.Row([
+                                            ft.Text("ネガティブプロンプト", weight=ft.FontWeight.BOLD, size=14),
+                                            ft.Container(expand=True),
+                                            ft.IconButton(
+                                                icon=ft.Icons.COPY,
+                                                icon_size=14,
+                                                tooltip="ネガティブプロンプトをコピー",
+                                                on_click=lambda e: copy_to_clipboard(negative_text, "ネガティブプロンプト")
+                                            )
+                                        ]),
+                                        padding=ft.padding.only(top=0, bottom=0),
+                                        border=ft.border.only(
+                                            top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                                            bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
+                                        ),
+                                    )
+                                )
+                                metadata_text.controls.append(make_copyable_text(negative_text, size=11))
+
+                                # その他情報
+                                metadata_text.controls.append(
+                                    ft.Container(
+                                        content=ft.Row([
+                                            ft.Text("その他情報", weight=ft.FontWeight.BOLD, size=14),
+                                            ft.Container(expand=True),
+                                            ft.IconButton(
+                                                icon=ft.Icons.COPY,
+                                                icon_size=14,
+                                                tooltip="その他情報をコピー",
+                                                on_click=lambda e: copy_to_clipboard(f"Steps: {other_info}", "その他情報")
+                                            )
+                                        ]),
+                                        padding=ft.padding.only(top=0, bottom=0),
+                                        border=ft.border.only(
+                                            top=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                                            bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE))
+                                        ),
+                                    )
+                                )
+                                metadata_text.controls.append(make_copyable_text(f"Steps: {other_info}", size=11))
                             else:
                                 #それ以外
                                 metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
@@ -154,9 +227,9 @@ def main(page: ft.Page):
             reader = png.Reader(filename=image_path)
             w, h, _, info = reader.read()
             metadata_text.controls.extend([
-                ft.Divider(height=1),
-                ft.Text("画像情報", weight=ft.FontWeight.BOLD, size=12),
-                ft.Divider(height=1),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                ft.Text("画像情報", weight=ft.FontWeight.BOLD, size=16),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 ft.Text(f"幅 × 高さ: {w} × {h} px"),
                 ft.Text(f"ビット深度: {info.get('bitdepth')}"),
                 ft.Text(f"透明度: {'あり' if info.get('alpha') else 'なし'}"),
@@ -240,7 +313,7 @@ def main(page: ft.Page):
             back.update()
         back.on_hover = h
         dir_list.controls.append(back)
-        dir_list.controls.append(ft.Divider(height=1))
+        dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),)
 
         # 親フォルダ
         if p.parent != p:
@@ -277,7 +350,7 @@ def main(page: ft.Page):
                 content=ft.Column([
                     ft.Row([ft.Icon(ft.Icons.EXPLORE), ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD)]),
                     current_path_text,
-                    ft.Divider(height=1),
+                    ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                     dir_list,
                 ], expand=True),
                 bgcolor=ft.Colors.WHITE,
@@ -296,7 +369,7 @@ def main(page: ft.Page):
             ft.Container(
                 content=ft.Column([
                     ft.Text("メタデータ", weight=ft.FontWeight.BOLD, size=18),
-                    ft.Divider(height=1),
+                    ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                     metadata_text,
                 ], expand=True),
                 bgcolor=ft.Colors.WHITE,
