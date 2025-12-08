@@ -158,12 +158,6 @@ def main(page: ft.Page):
     async def async_go_forward():
         go_forward()
         page.update()
-    # イベント処理：マウス
-    def on_mouse_event(e: ft.MouseEvent):
-        if e.button == ft.MouseButton.BACK:
-            go_back()
-        elif e.button == ft.MouseButton.FORWARD:
-            go_forward()
     # イベントリスナー：マウス
     def start_mouse_back_forward_listener():
         if not win32api:
@@ -182,8 +176,6 @@ def main(page: ft.Page):
                     time.sleep(0.08)
                 time.sleep(0.01)
         threading.Thread(target=listener, daemon=True).start()
-    # マウスイベントの指定
-    page.on_mouse_event = on_mouse_event
     # ウインドウイベントの指定
     page.window.on_event = window_event
 
