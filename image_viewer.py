@@ -230,7 +230,11 @@ def main(page: ft.Page):
         height=36,
     )
     current_path_text = ft.Text("", size=12, italic=False, color=ft.Colors.OUTLINE)
-    dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+    dir_list = ft.ListView(
+        expand=True,
+        spacing=0,
+        padding=0,
+    )
     # ── 中央：サムネイルグリッド、画像表示 ──
     image_view = ft.Image(
         src="",
