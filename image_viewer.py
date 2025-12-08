@@ -12,6 +12,7 @@ import json
 import flet as ft
 import win32api
 import win32con
+import win32gui
 # 独自モジュール
 import clipboard
 import themes
@@ -43,6 +44,16 @@ def main(page: ft.Page):
     ####################
     # 各種イベント処理
     ####################
+    # 起動直後にウインドウハンドルを取得（Flet 0.28.3 完全対応！）
+    def setup_window_handle():
+        import win32gui
+        time.sleep(0.6)
+        def callback(hwnd, _):
+            if win32gui.IsWindowVisible(hwnd) and page.title in win32gui.GetWindowText(hwnd):
+                page.window_handle = hwnd
+                return False
+        win32gui.EnumWindows(callback, None)
+    threading.Thread(target=setup_window_handle, daemon=True).start()
     # イベント処理：ウインドウを閉じる
     def window_event(e):
         if e.data == "close":
@@ -171,20 +182,25 @@ def main(page: ft.Page):
         page.update()
     # イベントリスナー：マウス
     def start_mouse_back_forward_listener():
-        if not win32api:
-            return
         def listener():
             while True:
-                if win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:  # 戻るボタン
-                    page.run_task(async_go_back)  # 安全にメインスレッドで実行
-                    while win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:
-                        time.sleep(0.01)
-                    time.sleep(0.08)
-                if win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:  # 進むボタン
-                    page.run_task(async_go_forward)
-                    while win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:
-                        time.sleep(0.01)
-                    time.sleep(0.08)
+                # ハンドルがまだ取得できてなかったら待つ
+                if not hasattr(page, "window_handle") or not page.window_handle:
+                    time.sleep(0.1)
+                    continue
+                if win32gui.GetForegroundWindow() == page.window_handle:
+                    # 戻る
+                    if win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:
+                        page.run_task(async_go_back)
+                        while win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:
+                            time.sleep(0.01)
+                        time.sleep(0.08)
+                    # 進む
+                    if win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:
+                        page.run_task(async_go_forward)
+                        while win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:
+                            time.sleep(0.01)
+                        time.sleep(0.08)
                 time.sleep(0.01)
         threading.Thread(target=listener, daemon=True).start()
     # ウインドウイベントの指定

@@ -78,16 +78,24 @@ def refresh_directory(
     if path != "<DRIVES>":
         p = Path(path)
         if p.is_dir():
-            if any(item.suffix.lower() == ".png" for item in p.iterdir()):
-                # PNGがあれば非同期でサムネイル読み込み開始
-                page.run_task(
-                    cp.show_thumbnails_async, 
-                    page, path, image_view, thumbnail_grid, metadata_text, theme_colors, settings
-                )
-            else:
-                # PNGなし
-                image_view.visible = False
-                thumbnail_grid.visible = False
+            try:
+                if any(item.suffix.lower() == ".png" for item in p.iterdir()):
+                    # PNGがあれば非同期でサムネイル読み込み開始
+                    page.run_task(
+                        cp.show_thumbnails_async, 
+                        page, path, image_view, thumbnail_grid, metadata_text, theme_colors, settings
+                    )
+                else:
+                    # PNGなし
+                    image_view.visible = False
+                    thumbnail_grid.visible = False
+                    metadata_text.controls.clear()
+                    metadata_text.controls.extend([
+                        ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                        ft.Text("このフォルダにPNG画像がありません", size=16),
+                    ])
+                    page.update()
+            except PermissionError:
                 metadata_text.controls.clear()
                 metadata_text.controls.extend([
                     ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
