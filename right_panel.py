@@ -7,7 +7,9 @@ from datetime import datetime
 import clipboard
 import themes
 
+####################
 # メタデータ表示の更新
+####################
 def update_metadata(image_path: str, page: ft.Page, metadata_text: ft.Column, theme_colors:dict, settings: dict):
     # パーツ：コピペできるテキスト表示領域
     def make_copyable_text(value: str, size=12):

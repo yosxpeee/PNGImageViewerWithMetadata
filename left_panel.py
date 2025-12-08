@@ -4,10 +4,10 @@ import string
 from pathlib import Path
 import win32api
 
-#import center_panel as cp
 import right_panel as rp
-
+####################
 # イベント処理：履歴のナビゲート
+####################
 def navigate_to(
         page: ft.Page, 
         path: str, 
@@ -92,8 +92,9 @@ def refresh_directory(
     except PermissionError:
         dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
     page.update()
-
+####################
 # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
+####################
 def make_list_item(
         name: str, 
         icon: ft.Icon, 
@@ -134,12 +135,30 @@ def make_list_item(
     )
     container.on_hover = mli_hover
     return container
+####################
 # 画像選択
-def select_image(page, path: str, metadata_text, theme_colors, image_view, settings):
+####################
+def select_image(
+        page: ft.Page, 
+        path: str, 
+        metadata_text: ft.Column, 
+        theme_colors: dict, 
+        image_view: ft.Image, 
+        settings: dict
+    ):
     image_view.src = path
     rp.update_metadata(path, page, metadata_text, theme_colors, settings)
     page.update()
-
+####################
 # ドライブ一覧表示
-def show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view, settings):
+####################
+def show_drives(
+        page: ft.Page, 
+        metadata_text: ft.Column, 
+        current_path_text: ft.Text, 
+        theme_colors: dict, 
+        dir_list: dict, 
+        image_view: ft.Image, 
+        settings: dict
+    ):
     navigate_to(page, "<DRIVES>", metadata_text, current_path_text, theme_colors, dir_list, image_view, settings)
