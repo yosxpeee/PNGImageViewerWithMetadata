@@ -1,12 +1,14 @@
+# pythonモジュール
 import flet as ft
 import os
 import string
 from pathlib import Path
 import win32api
-
+# 独自モジュール
 import right_panel as rp
+
 ####################
-# イベント処理：履歴のナビゲート
+# 履歴のナビゲート
 ####################
 def navigate_to(
         page: ft.Page, 
@@ -24,7 +26,9 @@ def navigate_to(
     page.history_index += 1
     refresh_directory(page, path, metadata_text, current_path_text, theme_colors, dir_list, image_view, settings)
 
+####################
 # ディレクトリ情報更新
+####################
 def refresh_directory(
         page: ft.Page, 
         path: str, 
@@ -92,6 +96,7 @@ def refresh_directory(
     except PermissionError:
         dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
     page.update()
+
 ####################
 # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
 ####################
@@ -135,6 +140,7 @@ def make_list_item(
     )
     container.on_hover = mli_hover
     return container
+
 ####################
 # 画像選択
 ####################
@@ -149,6 +155,7 @@ def select_image(
     image_view.src = path
     rp.update_metadata(path, page, metadata_text, theme_colors, settings)
     page.update()
+
 ####################
 # ドライブ一覧表示
 ####################

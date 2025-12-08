@@ -1,9 +1,10 @@
+# pythonモジュール
 import flet as ft
 import os
 import png
 from pathlib import Path
 from datetime import datetime
-
+# 独自モジュール
 import clipboard
 import themes
 

@@ -1,3 +1,4 @@
+# pythonモジュール
 import flet as ft
 import io
 from PIL import Image

@@ -3,6 +3,7 @@
 #
 # 根幹は Grok 4.1 beta に作らせてみました。
 ########################################
+# pythonモジュール
 import os
 import threading
 import time
@@ -55,61 +56,7 @@ def main(page: ft.Page):
             page, settings, 
             left_panel, center_panel, right_panel, 
             current_path_text, metadata_text, dir_list, theme_colors)
-    # イベント処理：戻る
-    def go_back():
-        if page.history_index > 0:
-            page.history_index -= 1
-            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view, settings)
-    async def async_go_back():
-        go_back()
-        page.update()
-    # イベント処理：進む
-    def go_forward():
-        if page.history_index + 1 < len(page.navigation_history):
-            page.history_index += 1
-            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view, settings)
-    async def async_go_forward():
-        go_forward()
-        page.update()
-    # イベント処理：マウス
-    def on_mouse_event(e: ft.MouseEvent):
-        if e.button == ft.MouseButton.BACK:
-            go_back()
-        elif e.button == ft.MouseButton.FORWARD:
-            go_forward()
-    # イベントリスナー：マウス
-    def start_mouse_back_forward_listener():
-        if not win32api:
-            return
-        def listener():
-            while True:
-                if win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:  # 戻るボタン
-                    page.run_task(async_go_back)  # 安全にメインスレッドで実行
-                    while win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:
-                        time.sleep(0.01)
-                    time.sleep(0.08)
-                if win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:  # 進むボタン
-                    page.run_task(async_go_forward)
-                    while win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:
-                        time.sleep(0.01)
-                    time.sleep(0.08)
-                time.sleep(0.01)
-        threading.Thread(target=listener, daemon=True).start()
-    # マウスイベントの指定
-    page.on_mouse_event = on_mouse_event
-    # ウインドウイベントの指定
-    page.window.on_event = window_event
-
-    ####################
-    # 左ペインの処理
-    ####################
-    
-
-
-    ####################
-    # 中央ペインの処理
-    ####################
-    # 右クリックメニュー
+    # イベント処理：右クリックメニュー
     def show_image_context_menu(e: ft.TapDownEvent):
         if not image_view.src or not os.path.exists(image_view.src):
             return
@@ -185,11 +132,50 @@ def main(page: ft.Page):
         page.overlay.append(overlay)
         context_menu.open = True
         page.update()
-
-    ####################
-    # 右ペインの処理
-    ####################
-
+    # イベント処理：戻る
+    def go_back():
+        if page.history_index > 0:
+            page.history_index -= 1
+            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view, settings)
+    async def async_go_back():
+        go_back()
+        page.update()
+    # イベント処理：進む
+    def go_forward():
+        if page.history_index + 1 < len(page.navigation_history):
+            page.history_index += 1
+            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view, settings)
+    async def async_go_forward():
+        go_forward()
+        page.update()
+    # イベント処理：マウス
+    def on_mouse_event(e: ft.MouseEvent):
+        if e.button == ft.MouseButton.BACK:
+            go_back()
+        elif e.button == ft.MouseButton.FORWARD:
+            go_forward()
+    # イベントリスナー：マウス
+    def start_mouse_back_forward_listener():
+        if not win32api:
+            return
+        def listener():
+            while True:
+                if win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:  # 戻るボタン
+                    page.run_task(async_go_back)  # 安全にメインスレッドで実行
+                    while win32api.GetKeyState(win32con.VK_XBUTTON1) < 0:
+                        time.sleep(0.01)
+                    time.sleep(0.08)
+                if win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:  # 進むボタン
+                    page.run_task(async_go_forward)
+                    while win32api.GetKeyState(win32con.VK_XBUTTON2) < 0:
+                        time.sleep(0.01)
+                    time.sleep(0.08)
+                time.sleep(0.01)
+        threading.Thread(target=listener, daemon=True).start()
+    # マウスイベントの指定
+    page.on_mouse_event = on_mouse_event
+    # ウインドウイベントの指定
+    page.window.on_event = window_event
 
     ####################
     # 主処理開始
