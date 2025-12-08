@@ -101,7 +101,7 @@ def main(page: ft.Page):
                         page.update()
                     ),
                 ),
-                ft.Divider(height=1),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.CLOSE, size=18),
                     title=ft.Text("キャンセル", size=12, color=ft.Colors.ERROR),
@@ -230,7 +230,7 @@ def main(page: ft.Page):
                 theme_switch,
             ]),
             current_path_text,
-            ft.Divider(height=1),
+            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
             dir_list,
         ], expand=True),
         padding=10,
