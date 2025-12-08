@@ -105,7 +105,10 @@ def main(page: ft.Page):
                     leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
                     title=ft.Text("フォルダをエクスプローラーで開く", size=12),
                     on_click=lambda e: (
-                        os.startfile(os.path.dirname(current_path)),
+                        # 選択された画像をハイライトして表に表示
+                        __import__("subprocess").Popen(
+                            f'explorer /select,"{current_path}"'
+                        ),
                         page.overlay.remove(overlay),
                         page.update()
                     ),
