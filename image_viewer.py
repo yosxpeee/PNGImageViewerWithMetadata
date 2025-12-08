@@ -59,6 +59,9 @@ def main(page: ft.Page):
             current_path_text, metadata_text, dir_list, theme_colors)
     # イベント処理：右クリックメニュー
     def show_image_context_menu(e: ft.TapDownEvent):
+        # サムネイルグリッド表示中 or 画像非表示 → メニュー出さない！
+        if thumbnail_grid.visible or not image_view.visible:
+            return
         current_path = getattr(page, "current_image_path", None)
         if not current_path or not os.path.exists(current_path):
             return

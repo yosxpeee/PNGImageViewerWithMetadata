@@ -51,6 +51,7 @@ def refresh_directory(
         back.update()
 
     dir_list.controls.clear()
+    page.current_image_path = None
     # ドライブ一覧の特別処理
     if path == "<DRIVES>":
         current_path_text.value = "ドライブを選択してください"
