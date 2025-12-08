@@ -535,6 +535,7 @@ def main(page: ft.Page):
         try:
             stat = os.stat(image_path)
             size_kb = stat.st_size / 1024
+            theme_colors = ThemeColors.dark() if settings["dark_theme"] else ThemeColors.light()
             metadata_text.controls.extend([
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16, color=theme_colors["meta_secondary_title"]),
