@@ -5,9 +5,10 @@ from pathlib import Path
 from datetime import datetime
 
 import clipboard
+import themes
 
 # メタデータ表示の更新
-def update_metadata(image_path: str, page: ft.Page, metadata_text: ft.Column, theme_colors:dict):
+def update_metadata(image_path: str, page: ft.Page, metadata_text: ft.Column, theme_colors:dict, settings: dict):
     # パーツ：コピペできるテキスト表示領域
     def make_copyable_text(value: str, size=12):
         return ft.TextField(
@@ -96,6 +97,7 @@ def update_metadata(image_path: str, page: ft.Page, metadata_text: ft.Column, th
     try:
         stat = os.stat(image_path)
         size_kb = stat.st_size / 1024
+        theme_colors = themes.ThemeColors.dark() if settings["dark_theme"] else themes.ThemeColors.light()
         metadata_text.controls.extend([
             ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
             ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16, color=theme_colors["meta_secondary_title"]),

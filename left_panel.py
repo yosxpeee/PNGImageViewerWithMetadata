@@ -15,13 +15,14 @@ def navigate_to(
         current_path_text: ft.Text, 
         theme_colors: dict, 
         dir_list: ft.Column, 
-        image_view: ft.Image
+        image_view: ft.Image,
+        settings: dict,
     ):
     if page.history_index + 1 < len(page.navigation_history):
         page.navigation_history = page.navigation_history[:page.history_index + 1]
     page.navigation_history.append(path)
     page.history_index += 1
-    refresh_directory(page, path, metadata_text, current_path_text, theme_colors, dir_list, image_view)
+    refresh_directory(page, path, metadata_text, current_path_text, theme_colors, dir_list, image_view, settings)
 
 # ディレクトリ情報更新
 def refresh_directory(
@@ -31,7 +32,8 @@ def refresh_directory(
         current_path_text: ft.Text, 
         theme_colors: dict, 
         dir_list: ft.Column, 
-        image_view: ft.Image
+        image_view: ft.Image,
+        settings: dict,
     ):
     # ホバーエフェクト
     def rd_hover(e):
@@ -55,6 +57,7 @@ def refresh_directory(
                     theme_colors, 
                     dir_list, 
                     image_view, 
+                    settings,
                     True
                 ))
         page.update()
@@ -79,13 +82,13 @@ def refresh_directory(
     dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),)
     # 親フォルダ
     if p.parent != p:
-        dir_list.controls.append(make_list_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, page, str(p.parent), metadata_text, current_path_text, theme_colors, dir_list, image_view, True))
+        dir_list.controls.append(make_list_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, page, str(p.parent), metadata_text, current_path_text, theme_colors, dir_list, image_view, settings, True))
     try:
         for item in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
             if item.is_dir():
-                dir_list.controls.append(make_list_item(item.name + "/", ft.Icons.FOLDER, page, str(item), metadata_text, current_path_text, theme_colors, dir_list, image_view, True))
+                dir_list.controls.append(make_list_item(item.name + "/", ft.Icons.FOLDER, page, str(item), metadata_text, current_path_text, theme_colors, dir_list, image_view, settings, True))
             elif item.suffix.lower() == ".png":
-                dir_list.controls.append(make_list_item(item.name, ft.Icons.IMAGE, page, str(item), metadata_text, current_path_text, theme_colors, dir_list, image_view, False))
+                dir_list.controls.append(make_list_item(item.name, ft.Icons.IMAGE, page, str(item), metadata_text, current_path_text, theme_colors, dir_list, image_view, settings, False))
     except PermissionError:
         dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
     page.update()
@@ -101,16 +104,17 @@ def make_list_item(
         theme_colors: dict, 
         dir_list: ft.Column,
         image_view: ft.Image, 
+        settings: dict,
         is_folder=False
     ):
     #クリック時のイベントハンドラ
     def on_click_handler(e):
         if path == "<DRIVES>":
-            show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view)
+            show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view, settings)
         elif is_folder:
-            navigate_to(page, path, metadata_text, current_path_text, theme_colors, dir_list, image_view)
+            navigate_to(page, path, metadata_text, current_path_text, theme_colors, dir_list, image_view, settings)
         else:
-            select_image(page, path, metadata_text, theme_colors, image_view)
+            select_image(page, path, metadata_text, theme_colors, image_view, settings)
     #ホバーエフェクト
     def mli_hover(e):
         container.bgcolor = theme_colors["hover"] if e.data == "true" else None
@@ -131,11 +135,11 @@ def make_list_item(
     container.on_hover = mli_hover
     return container
 # 画像選択
-def select_image(page, path: str, metadata_text, theme_colors, image_view):
+def select_image(page, path: str, metadata_text, theme_colors, image_view, settings):
     image_view.src = path
-    rp.update_metadata(path, page, metadata_text, theme_colors)
+    rp.update_metadata(path, page, metadata_text, theme_colors, settings)
     page.update()
 
 # ドライブ一覧表示
-def show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view):
-    navigate_to(page, "<DRIVES>", metadata_text, current_path_text, theme_colors, dir_list, image_view)
+def show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view, settings):
+    navigate_to(page, "<DRIVES>", metadata_text, current_path_text, theme_colors, dir_list, image_view, settings)

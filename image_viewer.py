@@ -59,7 +59,7 @@ def main(page: ft.Page):
     def go_back():
         if page.history_index > 0:
             page.history_index -= 1
-            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view)
+            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view, settings)
     async def async_go_back():
         go_back()
         page.update()
@@ -67,7 +67,7 @@ def main(page: ft.Page):
     def go_forward():
         if page.history_index + 1 < len(page.navigation_history):
             page.history_index += 1
-            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view)
+            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view, settings)
     async def async_go_forward():
         go_forward()
         page.update()
@@ -277,6 +277,6 @@ def main(page: ft.Page):
         left_panel, center_panel, right_panel, 
         current_path_text, metadata_text, dir_list, theme_colors)
     # 起動時にドライブ一覧表示
-    lp.show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view)
+    lp.show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view, settings)
 #起動処理
 ft.app(target=main)
