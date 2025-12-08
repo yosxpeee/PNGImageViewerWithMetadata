@@ -60,7 +60,7 @@ def main(page: ft.Page):
             page, settings, 
             left_panel, center_panel, right_panel, 
             current_path_text, metadata_text, dir_list, theme_colors)
-    # イベント処理：右クリックメニュー
+    # イベント処理：画像右クリックメニュー
     def show_image_context_menu(e: ft.TapDownEvent):
         # サムネイルグリッド表示中 or 画像非表示はメニューを出さない
         if thumbnail_grid.visible or not image_view.visible:
