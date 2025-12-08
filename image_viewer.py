@@ -44,7 +44,7 @@ def main(page: ft.Page):
     ####################
     # 各種イベント処理
     ####################
-    # 起動直後にウインドウハンドルを取得（Flet 0.28.3 完全対応！）
+    # イベント処理：ウインドウハンドルを取得
     def setup_window_handle():
         import win32gui
         time.sleep(0.6)
@@ -53,7 +53,6 @@ def main(page: ft.Page):
                 page.window_handle = hwnd
                 return False
         win32gui.EnumWindows(callback, None)
-    threading.Thread(target=setup_window_handle, daemon=True).start()
     # イベント処理：ウインドウを閉じる
     def window_event(e):
         if e.data == "close":
@@ -203,12 +202,14 @@ def main(page: ft.Page):
                         time.sleep(0.08)
                 time.sleep(0.01)
         threading.Thread(target=listener, daemon=True).start()
-    # ウインドウイベントの指定
-    page.window.on_event = window_event
 
     ####################
     # 主処理開始
     ####################
+    # ウインドウハンドルの監視をバックグラウンドで実行
+    threading.Thread(target=setup_window_handle, daemon=True).start()
+    # ウインドウイベントの指定
+    page.window.on_event = window_event
     # 起動時にイベントリスナー開始
     start_mouse_back_forward_listener()
 
