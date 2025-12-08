@@ -118,11 +118,11 @@ def refresh_directory(
     # ドライブ一覧に戻る
     back = ft.Container(
         content=ft.Row([
-            ft.Icon(ft.Icons.COMPUTER, size=12),
-            ft.Text("ドライブ一覧に戻る", expand=True, size=12),
-            ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=12, opacity=0.5),
+            ft.Icon(ft.Icons.COMPUTER, size=14),
+            ft.Text("ドライブ一覧に戻る", expand=True, size=14),
+            ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, opacity=0.5),
         ]),
-        height=24,
+        height=32,
         alignment=ft.alignment.top_center,
         padding=ft.padding.symmetric(horizontal=1, vertical=1),
         border_radius=8,
@@ -226,9 +226,9 @@ def make_list_item(
 
     container = ft.Container(
         content=ft.Row([
-            ft.Icon(icon, size=12),
-            ft.Text(name, expand=True, size=12),
-            ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=12, opacity=0.5),
+            ft.Icon(icon, size=14),
+            ft.Text(name, expand=True, size=14),
+            ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, opacity=0.5),
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         height=24,
         padding=ft.padding.symmetric(horizontal=1, vertical=1),

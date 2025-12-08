@@ -55,7 +55,7 @@ def update_metadata(
                 ),
             )
         )
-        metadata_text.controls.append(make_copyable_text(prompt_text, size=11))
+        metadata_text.controls.append(make_copyable_text(prompt_text, size=13))
     # ネガティブプロンプト表示領域
     def negative_textarea():
         metadata_text.controls.append(
@@ -77,7 +77,7 @@ def update_metadata(
                 ),
             )
         )
-        metadata_text.controls.append(make_copyable_text(negative_text, size=11))
+        metadata_text.controls.append(make_copyable_text(negative_text, size=13))
     #その他情報表示領域
     def other_textarea():
         metadata_text.controls.append(
@@ -99,7 +99,7 @@ def update_metadata(
                 ),
             )
         )
-        metadata_text.controls.append(make_copyable_text(f"Steps: {other_info}", size=11))
+        metadata_text.controls.append(make_copyable_text(f"Steps: {other_info}", size=13))
     metadata_text.controls.clear()
     if not image_path:
         metadata_text.controls.extend([
@@ -155,6 +155,7 @@ def update_metadata(
                             #それ以外
                             metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
                 elif ctype in ("iTXt", "zTXt"):
+                    metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
                     metadata_text.controls.append(ft.Text(f"{ctype}: あり"))
         # ファイル情報
         metadata_text.controls.extend([
