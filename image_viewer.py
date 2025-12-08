@@ -1,6 +1,7 @@
 ########################################
 # image_viewer.py
 #
+# これが本体。
 # 根幹は Grok 4.1 beta に作らせてみました。
 ########################################
 # pythonモジュール
@@ -61,10 +62,11 @@ def main(page: ft.Page):
             current_path_text, metadata_text, dir_list, theme_colors)
     # イベント処理：右クリックメニュー
     def show_image_context_menu(e: ft.TapDownEvent):
-        # サムネイルグリッド表示中 or 画像非表示 → メニュー出さない！
+        # サムネイルグリッド表示中 or 画像非表示はメニューを出さない
         if thumbnail_grid.visible or not image_view.visible:
             return
         current_path = getattr(page, "current_image_path", None)
+        # 画像のパスがない時もメニューを出さない
         if not current_path or not os.path.exists(current_path):
             return
         menu_x = e.global_x
@@ -129,12 +131,11 @@ def main(page: ft.Page):
         page.update()
     # イベント処理：グリッド表示に戻る
     def return_to_grid(e):
-        """単体表示 → サムネイルグリッドに戻る"""
         if image_view.visible:
             thumbnail_grid.visible = True
             image_view.visible = False
             page.current_image_path = None
-            # メタデータもサムネイルビュー用のに戻す（気が利く！）
+            # メタデータもサムネイルビュー用のに戻す
             metadata_text.controls.clear()
             metadata_text.controls.extend([
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
@@ -187,13 +188,11 @@ def main(page: ft.Page):
     # 起動時にイベントリスナー開始
     start_mouse_back_forward_listener()
 
-    # 設定読み込み
+    # 設定読み込み(ない場合は初期設定をする)
     if os.path.exists(SETTING_JSON_FILE):
-        #読む
         with open(SETTING_JSON_FILE) as f:
             settings = json.load(f)
     else:
-        #なかったら初期設定をする
         settings['dark_theme'] = False
     theme_colors = themes.ThemeColors.dark() if settings['dark_theme'] else themes.ThemeColors.light()
 
@@ -207,7 +206,7 @@ def main(page: ft.Page):
     )
     current_path_text = ft.Text("", size=12, italic=False, color=ft.Colors.OUTLINE)
     dir_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
-    # ── 中央：画像表示 ──
+    # ── 中央：サムネイルグリッド、画像表示 ──
     image_view = ft.Image(
         src="",
         fit=ft.ImageFit.CONTAIN,
@@ -280,7 +279,6 @@ def main(page: ft.Page):
             ft.Text("読み込み中…", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=24),
     )
-    page.overlay.append(loading_overlay)
     # page.overlay に追加（最前面に常に表示）
     page.overlay.append(loading_overlay)
     page.add(

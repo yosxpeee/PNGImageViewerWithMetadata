@@ -1,3 +1,8 @@
+########################################
+# left_panel.py
+#
+# 左パネルの部品(人力でコード分割)
+########################################
 # pythonモジュール
 import flet as ft
 import os
@@ -78,7 +83,7 @@ def refresh_directory(
         p = Path(path)
         if p.is_dir():
             if any(item.suffix.lower() == ".png" for item in p.iterdir()):
-                # PNGがあれば非同期でサムネイル読み込み開始！
+                # PNGがあれば非同期でサムネイル読み込み開始
                 page.run_task(
                     show_thumbnails_async, 
                     page, path, image_view, thumbnail_grid, metadata_text, theme_colors, settings
@@ -124,13 +129,50 @@ def refresh_directory(
     dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),)
     # 親フォルダ
     if p.parent != p:
-        dir_list.controls.append(make_list_item(".. (親フォルダ)", ft.Icons.ARROW_BACK, page, str(p.parent), metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings, True))
+        dir_list.controls.append(make_list_item(
+            ".. (親フォルダ)", 
+            ft.Icons.ARROW_BACK, 
+            page, 
+            str(p.parent), 
+            metadata_text, 
+            current_path_text, 
+            theme_colors, 
+            dir_list, 
+            image_view, 
+            thumbnail_grid, 
+            settings, 
+            True
+        ))
     try:
         for item in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
             if item.is_dir():
-                dir_list.controls.append(make_list_item(item.name + "/", ft.Icons.FOLDER, page, str(item), metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings, True))
+                dir_list.controls.append(make_list_item(
+                    item.name + "/", 
+                    ft.Icons.FOLDER, 
+                    page, str(item), 
+                    metadata_text, 
+                    current_path_text, 
+                    theme_colors, 
+                    dir_list, 
+                    image_view, 
+                    thumbnail_grid, 
+                    settings, 
+                    True
+                ))
             elif item.suffix.lower() == ".png":
-                dir_list.controls.append(make_list_item(item.name, ft.Icons.IMAGE, page, str(item), metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings, False))
+                dir_list.controls.append(make_list_item(
+                    item.name, 
+                    ft.Icons.IMAGE, 
+                    page, 
+                    str(item), 
+                    metadata_text, 
+                    current_path_text, 
+                    theme_colors, 
+                    dir_list, 
+                    image_view, 
+                    thumbnail_grid, 
+                    settings, 
+                False))
     except PermissionError:
         dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
     page.update()
@@ -226,12 +268,11 @@ async def show_thumbnails_async(
         theme_colors: dict,
         settings: dict
     ):
-    # ローディングオーバーレイを正しく取得（page.overlay[0] が確実体）
-    loading_overlay = page.overlay[0]  # ← これで確実に取れる！
+    # ローディングオーバーレイを取得
+    loading_overlay = page.overlay[0] 
     loading_overlay.visible = True
     loading_overlay.content.controls[1].value = "読み込み中…"
     page.update()
-
     # 既存サムネイルクリア
     thumbnail_grid.controls.clear()
     try:
@@ -291,7 +332,7 @@ async def show_thumbnails_async(
                 select_image(page, p, metadata_text, theme_colors, image_view, thumbnail_grid, settings)
             )
             thumbnail_grid.controls.append(container)
-            # 10枚ごとに更新（ヌルヌル表示！）
+            # 10枚ごとに更新
             if i % 10 == 0 or i == len(png_files) - 1:
                 percent = int((i + 1) / len(png_files) * 100)
                 loading_overlay.content.controls[1].value = f"読み込み中… {i+1}/{len(png_files)} ({percent}%)"
