@@ -22,7 +22,7 @@ SETTING_JSON_FILE = "viewer_settings.json"
 # メイン関数
 ####################
 def main(page: ft.Page):
-    # 各種パラメータ設定
+    # pageパラメータ設定(標準)
     page.title = "PNG Image Viewer with Metadata"
     page.window.min_width = 1024
     page.window.min_height = 576
@@ -31,9 +31,11 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.SYSTEM
     page.padding = 0
     page.window.prevent_close = True
+    #pageパラメータ(カスタム)
     page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
     page.history_index = 0                 # 現在の位置
     page.current_image_path = None         # 現在の画像のパス
+    #その他
     settings = {}
     theme_colors = themes.ThemeColors.light() #とりあえずの初期値
 
