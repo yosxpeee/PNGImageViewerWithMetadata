@@ -37,7 +37,7 @@ def main(page: ft.Page):
     page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
     page.history_index = 0                 # 現在の位置
     page.current_image_path = None         # 現在の画像のパス
-    page.scroll_position_history = []
+    page.scroll_position_history = []      # ファイルブラウザのスクロール位置履歴
     #その他
     settings = {}
     theme_colors = themes.ThemeColors.light() #とりあえずの初期値

@@ -182,6 +182,7 @@ def refresh_directory(
         dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
     page.update()
     #print("(refresh_directory) "+current_path_text.value+"に移動しました。")
+    # スクロール位置の復元
     for index, item in enumerate(page.scroll_position_history):
         if current_path_text.value in item:
             #print("見つかりました："+str(page.scroll_position_history[index]))
