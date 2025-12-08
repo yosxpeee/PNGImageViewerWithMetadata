@@ -135,6 +135,11 @@ def main(page: ft.Page):
             thumbnail_grid.visible = True
             image_view.visible = False
             page.current_image_path = None
+            # すべてのサムネイルの拡大をリセット！
+            for container in thumbnail_grid.controls:
+                if hasattr(container, "animate_scale") and container.scale != 1.0:
+                    container.scale = 1.0
+                    container.update()
             # メタデータもサムネイルビュー用のに戻す
             metadata_text.controls.clear()
             metadata_text.controls.extend([
