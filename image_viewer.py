@@ -30,9 +30,10 @@ def main(page: ft.Page):
     page.window.height = 810
     page.theme_mode = ft.ThemeMode.SYSTEM
     page.padding = 0
+    page.window.prevent_close = True
     page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
     page.history_index = 0                 # 現在の位置
-    page.window.prevent_close = True
+    page.current_image_path = None         # 現在の画像のパス
     settings = {}
     theme_colors = themes.ThemeColors.light() #とりあえずの初期値
 
@@ -58,7 +59,8 @@ def main(page: ft.Page):
             current_path_text, metadata_text, dir_list, theme_colors)
     # イベント処理：右クリックメニュー
     def show_image_context_menu(e: ft.TapDownEvent):
-        if not image_view.src or not os.path.exists(image_view.src):
+        current_path = getattr(page, "current_image_path", None)
+        if not current_path or not os.path.exists(current_path):
             return
         menu_x = e.global_x
         menu_y = e.global_y
@@ -78,7 +80,7 @@ def main(page: ft.Page):
                     leading=ft.Icon(ft.Icons.COPY_ALL, size=18),
                     title=ft.Text("画像をクリップボードにコピー\n(透明度維持)", size=12),
                     on_click=lambda e: (
-                        clipboard.copy_image_to_clipboard(page, image_view.src, True),
+                        clipboard.copy_image_to_clipboard(page, current_path, True),
                         page.overlay.remove(overlay),
                         page.update()
                     ),
@@ -87,7 +89,7 @@ def main(page: ft.Page):
                     leading=ft.Icon(ft.Icons.COPY, size=18),
                     title=ft.Text("画像をクリップボードにコピー\n(透明度なし)", size=12),
                     on_click=lambda e: (
-                        clipboard.copy_image_to_clipboard(page, image_view.src, False),
+                        clipboard.copy_image_to_clipboard(page, current_path, False),
                         page.overlay.remove(overlay),
                         page.update()
                     ),
@@ -96,7 +98,7 @@ def main(page: ft.Page):
                     leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
                     title=ft.Text("フォルダをエクスプローラーで開く", size=12),
                     on_click=lambda e: (
-                        os.startfile(os.path.dirname(image_view.src)),
+                        os.startfile(os.path.dirname(current_path)),
                         page.overlay.remove(overlay),
                         page.update()
                     ),
@@ -114,20 +116,8 @@ def main(page: ft.Page):
         )
         # ポップアップとして表示（Stackでオーバーレイ）
         overlay = ft.Stack([
-            ft.Container(
-                bgcolor=ft.Colors.TRANSPARENT,
-                on_click=lambda e: (
-                    page.overlay.remove(overlay),
-                    page.update()
-                ),
-                expand=True,
-            ),
-            ft.Container(
-                content=context_menu,
-                top=menu_y,
-                left=menu_x,
-                animate=ft.Animation(150, "decelerate"),
-            ),
+            ft.Container(bgcolor=ft.Colors.TRANSPARENT, on_click=lambda e: (page.overlay.remove(overlay), page.update()), expand=True),
+            ft.Container(content=context_menu, top=menu_y - 100, left=menu_x - 120, animate=ft.Animation(150, "decelerate")),
         ], expand=True)
         page.overlay.append(overlay)
         context_menu.open = True
@@ -136,7 +126,7 @@ def main(page: ft.Page):
     def go_back():
         if page.history_index > 0:
             page.history_index -= 1
-            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view, settings)
+            lp.refresh_directory(page, page.navigation_history[page.history_index], metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
     async def async_go_back():
         go_back()
         page.update()
@@ -144,7 +134,7 @@ def main(page: ft.Page):
     def go_forward():
         if page.history_index + 1 < len(page.navigation_history):
             page.history_index += 1
-            lp.refresh_directory(page, page.navigation_history[page.history_index], current_path_text, theme_colors, dir_list, image_view, settings)
+            lp.refresh_directory(page, page.navigation_history[page.history_index], metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
     async def async_go_forward():
         go_forward()
         page.update()
@@ -208,10 +198,31 @@ def main(page: ft.Page):
         src="",
         fit=ft.ImageFit.CONTAIN,
         expand=True,
+        visible=False,
     )
-    image_container = ft.GestureDetector(
-        content=image_view,
+    thumbnail_grid = ft.GridView(
+        runs_count=5,
+        max_extent=180,
+        child_aspect_ratio=1.0,
+        spacing=10,
+        run_spacing=10,
+        padding=20,
+        visible=False,
+    )
+    # コンテナで切り替えやすくする
+    center_content_stack = ft.Stack([
+        image_view,
+        thumbnail_grid,
+    ], expand=True)
+    center_container = ft.GestureDetector(
+        content=center_content_stack,
         on_secondary_tap_down=show_image_context_menu,
+    )
+    center_panel = ft.Container(
+        content=center_container,
+        alignment=ft.alignment.center,
+        expand=2,
+        bgcolor=theme_colors["bg_main"],
     )
     # ── 右ペイン：メタデータ ──
     metadata_text = ft.Column([
@@ -236,12 +247,12 @@ def main(page: ft.Page):
         padding=10,
         width=340,
     )
-    center_panel = ft.Container(
-        content=image_container,
-        alignment=ft.alignment.center,
-        expand=2,
-        bgcolor=theme_colors["bg_main"],
-    )
+    #center_panel = ft.Container(
+    #    content=image_container,
+    #    alignment=ft.alignment.center,
+    #    expand=2,
+    #    bgcolor=theme_colors["bg_main"],
+    #)
     right_panel = ft.Container(
         content=ft.Column([
             ft.Text("画像情報", weight=ft.FontWeight.BOLD, size=18, color=ft.Colors.BLUE_ACCENT_200),
@@ -263,6 +274,6 @@ def main(page: ft.Page):
         left_panel, center_panel, right_panel, 
         current_path_text, metadata_text, dir_list, theme_colors)
     # 起動時にドライブ一覧表示
-    lp.show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view, settings)
+    lp.show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
 #起動処理
 ft.app(target=main)
