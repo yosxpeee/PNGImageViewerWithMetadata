@@ -9,6 +9,7 @@ import base64
 import io
 # 独自モジュール
 import right_panel as rp
+import themes
 
 ####################
 # 履歴のナビゲート
@@ -255,13 +256,12 @@ def show_thumbnails(
                 width=160,
                 height=160,
             )
-
             thumbnail_container = ft.Container(
                 content=thumbnail_image,
                 width=160,
                 height=160,
                 border_radius=10,
-                bgcolor=theme_colors["bg_panel"],
+                bgcolor=ft.Colors.GREY, #あえて固定にする
                 padding=4,
                 shadow=ft.BoxShadow(
                     spread_radius=1,

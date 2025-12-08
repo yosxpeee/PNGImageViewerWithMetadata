@@ -122,6 +122,23 @@ def main(page: ft.Page):
         page.overlay.append(overlay)
         context_menu.open = True
         page.update()
+    # イベント処理：グリッド表示に戻る
+    def return_to_grid(e):
+        """単体表示 → サムネイルグリッドに戻る"""
+        if image_view.visible:
+            thumbnail_grid.visible = True
+            image_view.visible = False
+            page.current_image_path = None
+            # メタデータもサムネイルビュー用のに戻す（気が利く！）
+            metadata_text.controls.clear()
+            metadata_text.controls.extend([
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                ft.Text(f"サムネイルビュー: {len(thumbnail_grid.controls)} 枚", 
+                        size=16, weight=ft.FontWeight.BOLD),
+                ft.Text(page.navigation_history[page.history_index], 
+                        size=12, color=ft.Colors.OUTLINE),
+            ])
+            page.update()
     # イベント処理：戻る
     def go_back():
         if page.history_index > 0:
@@ -209,7 +226,6 @@ def main(page: ft.Page):
         padding=20,
         visible=False,
     )
-    # コンテナで切り替えやすくする
     center_content_stack = ft.Stack([
         image_view,
         thumbnail_grid,
@@ -217,12 +233,7 @@ def main(page: ft.Page):
     center_container = ft.GestureDetector(
         content=center_content_stack,
         on_secondary_tap_down=show_image_context_menu,
-    )
-    center_panel = ft.Container(
-        content=center_container,
-        alignment=ft.alignment.center,
-        expand=2,
-        bgcolor=theme_colors["bg_main"],
+        on_tap_down=return_to_grid,
     )
     # ── 右ペイン：メタデータ ──
     metadata_text = ft.Column([
@@ -247,12 +258,12 @@ def main(page: ft.Page):
         padding=10,
         width=340,
     )
-    #center_panel = ft.Container(
-    #    content=image_container,
-    #    alignment=ft.alignment.center,
-    #    expand=2,
-    #    bgcolor=theme_colors["bg_main"],
-    #)
+    center_panel = ft.Container(
+        content=center_container,
+        alignment=ft.alignment.center,
+        expand=2,
+        bgcolor=theme_colors["bg_main"],
+    )
     right_panel = ft.Container(
         content=ft.Column([
             ft.Text("画像情報", weight=ft.FontWeight.BOLD, size=18, color=ft.Colors.BLUE_ACCENT_200),
