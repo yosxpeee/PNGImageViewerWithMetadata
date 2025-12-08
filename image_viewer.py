@@ -16,39 +16,9 @@ import win32api
 import win32con
 # 独自モジュール
 import clipboard
+import themes
 
 SETTING_JSON_FILE = "viewer_settings.json"
-
-####################
-# カラーテーマ定義
-####################
-class ThemeColors:
-    @staticmethod
-    def light():
-        return {
-            "bg_main": ft.Colors.WHITE,
-            "bg_panel": ft.Colors.WHITE,
-            "text_primary": ft.Colors.BLACK,
-            "text_secondary": ft.Colors.OUTLINE,
-            "divider": ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE),
-            "hover": ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE),
-            "selected": ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY),
-            "surface": ft.Colors.SURFACE,
-            "meta_secondary_title": ft.Colors.TEAL_900,
-        }
-    @staticmethod
-    def dark():
-        return {
-            "bg_main": ft.Colors.with_opacity(0.98, "#0e0e0e"),   # ほぼ真っ黒
-            "bg_panel": ft.Colors.with_opacity(0.96, "#121212"),  # 少し明るめのカード
-            "text_primary": ft.Colors.WHITE,
-            "text_secondary": ft.Colors.with_opacity(0.7, ft.Colors.WHITE),
-            "divider": ft.Colors.with_opacity(0.3, ft.Colors.WHITE),
-            "hover": ft.Colors.with_opacity(0.12, ft.Colors.WHITE),
-            "selected": ft.Colors.with_opacity(0.22, ft.Colors.WHITE),
-            "surface": ft.Colors.with_opacity(0.98, "#1e1e1e"),
-            "meta_secondary_title": ft.Colors.TEAL_ACCENT_400,
-        }
 
 ####################
 # メイン関数
@@ -66,7 +36,7 @@ def main(page: ft.Page):
     page.history_index = 0                 # 現在の位置
     page.window.prevent_close = True
     settings = {}
-    theme_colors = ThemeColors.light() #とりあえずの初期値
+    theme_colors = themes.ThemeColors.light() #とりあえずの初期値
 
     ####################
     # 各種イベント処理
@@ -84,8 +54,10 @@ def main(page: ft.Page):
             settings["dark_theme"] = True
         else:
             settings["dark_theme"] = False
-        apply_theme()
-
+        themes.apply_theme(
+            page, settings, 
+            left_panel, center_panel, right_panel, 
+            current_path_text, metadata_text, dir_list, theme_colors)
     # イベント処理：履歴のナビゲート
     def navigate_to(path: str):
         if page.history_index + 1 < len(page.navigation_history):
@@ -137,52 +109,6 @@ def main(page: ft.Page):
     page.on_mouse_event = on_mouse_event
     # ウインドウイベントの指定
     page.window.on_event = window_event
-
-    ####################
-    # テーマ変更処理
-    ####################
-    def _walk_and_color(control):
-        """再帰的に色を適用（必要に応じて追加）"""
-        if hasattr(control, "color") and control.color in (ft.Colors.BLACK, ft.Colors.WHITE, ft.Colors.OUTLINE):
-            if isinstance(control, ft.Text):
-                control.color = theme_colors["text_primary"] if control.weight == ft.FontWeight.BOLD else theme_colors["text_secondary"]
-        if hasattr(control, "bgcolor"):
-            if control == dir_list:
-                return
-            # ホバー用コンテナは別途処理
-            if isinstance(control, ft.Container) and control.ink:
-                pass
-        if hasattr(control, "controls"):
-            for child in control.controls:
-                _walk_and_color(child)
-    def apply_theme():
-        theme_colors = ThemeColors.dark() if settings["dark_theme"] else ThemeColors.light()
-        page.theme_mode = ft.ThemeMode.DARK if settings["dark_theme"] else ft.ThemeMode.LIGHT
-        page.bgcolor = theme_colors["bg_main"]
-        # 中央パネル
-        center_panel.bgcolor = theme_colors["bg_main"]
-        # 左パネル
-        left_panel.bgcolor = theme_colors["bg_panel"]
-        left_panel.border = ft.border.all(1, theme_colors["divider"])
-        # 右パネル
-        right_panel.bgcolor = theme_colors["bg_panel"]
-        right_panel.border = ft.border.all(1, theme_colors["divider"])
-        # 汎用テキスト系
-        current_path_text.color = theme_colors["text_secondary"]
-        for ctrl in page.controls:
-            if isinstance(ctrl, ft.Row):
-                for c in ctrl.controls:
-                    _walk_and_color(c)
-        # メタデータエリアの区切り線と固有のテキスト
-        if metadata_text.controls:
-            for c in metadata_text.controls:
-                if isinstance(c, ft.Divider):
-                    c.color = theme_colors["divider"]
-                if isinstance(c, ft.Text):
-                    # 変えないと見にくくなるものだけ変更
-                    if c.value == "PNG メタデータ" or c.value == "ファイル情報":
-                        c.color = theme_colors["meta_secondary_title"]
-        page.update()
 
     ####################
     # 左ペインの処理
@@ -271,13 +197,11 @@ def main(page: ft.Page):
         page.update()
     # ドライブ一覧表示
     def show_drives():
-        # 履歴に追加してrefresh_directoryに任せる
         navigate_to("<DRIVES>")
 
     ####################
     # 中央ペインの処理
     ####################
-
     # 右クリックメニュー
     def show_image_context_menu(e: ft.TapDownEvent):
         if not image_view.src or not os.path.exists(image_view.src):
@@ -528,7 +452,7 @@ def main(page: ft.Page):
     else:
         #なかったら初期設定をする
         settings['dark_theme'] = False
-    theme_colors = ThemeColors.dark() if settings['dark_theme'] else ThemeColors.light()
+    theme_colors = themes.ThemeColors.dark() if settings['dark_theme'] else themes.ThemeColors.light()
 
     # ── 左ペイン：テーマ切り替えスイッチ、ファイルブラウザ ──
     theme_switch = ft.Switch(
@@ -595,7 +519,10 @@ def main(page: ft.Page):
         ], expand=True, spacing=0)
     )
     # 起動時にテーマ適用
-    apply_theme()
+    themes.apply_theme(
+        page, settings, 
+        left_panel, center_panel, right_panel, 
+        current_path_text, metadata_text, dir_list, theme_colors)
     # 起動時にドライブ一覧表示
     show_drives()
 #起動処理
