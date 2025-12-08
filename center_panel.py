@@ -77,7 +77,7 @@ async def show_thumbnails_async(
                 animate_scale=ft.Animation(300, "ease_out_back"),
                 scale=1.0,
                 content=ft.Image(src_base64=base64_str, fit=ft.ImageFit.CONTAIN),
-                tooltip=png_path.name,
+                tooltip=None, #邪魔なのでツールチップなし
             )
             # ホバーで拡大
             container.on_hover = lambda e, c=container: (
