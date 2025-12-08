@@ -164,7 +164,7 @@ def main(page: ft.Page):
                         size=12, color=ft.Colors.OUTLINE),
             ])
             page.update()
-    # ファイルブラウザのスクロール位置記録
+    # ファイルブラウザのスクロール位置記録(人力実装)
     def get_scroll_offset(e):
         scroll_pos = json.loads(e.data)
         if scroll_pos["t"] == "end":

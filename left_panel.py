@@ -26,7 +26,6 @@ def navigate_to(
         thumbnail_grid: ft.GridView,
         settings: dict,
     ):
-    #print("(navigate_to) "+current_path_text.value+"にいます。")
     if page.history_index + 1 < len(page.navigation_history):
         page.navigation_history = page.navigation_history[:page.history_index + 1]
     page.navigation_history.append(path)
@@ -181,8 +180,7 @@ def refresh_directory(
     except PermissionError:
         dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
     page.update()
-    #print("(refresh_directory) "+current_path_text.value+"に移動しました。")
-    # スクロール位置の復元
+    # スクロール位置の復元(人力実装)
     for index, item in enumerate(page.scroll_position_history):
         if current_path_text.value in item:
             #print("見つかりました："+str(page.scroll_position_history[index]))
@@ -194,7 +192,6 @@ def refresh_directory(
             else:
                 # 高さが違うなら復元せず履歴削除(復元しない＝POS:0なので履歴不要)
                 page.scroll_position_history.pop(index)
-                
 
 ####################
 # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
