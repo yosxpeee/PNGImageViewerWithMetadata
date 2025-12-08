@@ -37,6 +37,7 @@ def main(page: ft.Page):
     page.navigation_history = ["<DRIVES>"] # 訪問したフォルダの履歴
     page.history_index = 0                 # 現在の位置
     page.current_image_path = None         # 現在の画像のパス
+    page.scroll_position_history = []
     #その他
     settings = {}
     theme_colors = themes.ThemeColors.light() #とりあえずの初期値
@@ -163,6 +164,28 @@ def main(page: ft.Page):
                         size=12, color=ft.Colors.OUTLINE),
             ])
             page.update()
+    # ファイルブラウザのスクロール位置記録
+    def get_scroll_offset(e):
+        scroll_pos = json.loads(e.data)
+        if scroll_pos["t"] == "end":
+            tmpInfo = {current_path_text.value:{"scroll_pos":scroll_pos["p"], "window_height":page.window.height}}
+            #print("tmpInfo:"+str(tmpInfo))
+            overwrited = False
+            for index, item in enumerate(page.scroll_position_history):
+                if current_path_text.value in item:
+                    if scroll_pos["p"] > 0:
+                        page.scroll_position_history[index] = tmpInfo
+                        #print("同じ場所記録済みかつPOS:0以上なのでなので上書き")
+                    else:
+                        page.scroll_position_history.pop(index)
+                        #print("同じ場所記録済みかつPOS:0なので履歴を削除")
+                    overwrited = True #消してもTrueにする
+                    break
+            if overwrited == False:
+                if scroll_pos["p"] > 0:
+                    page.scroll_position_history.append(tmpInfo)
+                    #print("同じ場所がないかつPOS:0以上なので追加")
+            #print(page.scroll_position_history)
     # イベント処理：戻る
     def go_back():
         if page.history_index > 0:
@@ -234,6 +257,7 @@ def main(page: ft.Page):
         expand=True,
         spacing=0,
         padding=0,
+        on_scroll=get_scroll_offset,
     )
     # ── 中央：サムネイルグリッド、画像表示 ──
     image_view = ft.Image(
