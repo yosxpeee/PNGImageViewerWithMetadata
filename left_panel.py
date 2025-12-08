@@ -43,6 +43,7 @@ def refresh_directory(
     def rd_hover(e):
         back.bgcolor = theme_colors["selected"] if e.data == "true" else None
         back.update()
+
     dir_list.controls.clear()
     # ドライブ一覧の特別処理
     if path == "<DRIVES>":

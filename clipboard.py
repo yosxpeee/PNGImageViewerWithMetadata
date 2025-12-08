@@ -6,9 +6,12 @@ import numpy as np
 import struct
 import win32clipboard
 
+# 定数
 BITMAPV5HEADER_SIZE = 124
 
+####################
 # テキストをクリップボードにコピー
+####################
 def copy_text_to_clipboard(page: ft.Page, text: str, name: str = "テキスト"):
     page.set_clipboard(text)
     snack = ft.SnackBar(
@@ -20,7 +23,9 @@ def copy_text_to_clipboard(page: ft.Page, text: str, name: str = "テキスト")
     snack.open = True
     page.update()
 
+####################
 # 画像をクリップボードにコピー（透明度あり/なし両対応）
+####################
 def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
     try:
         if alpha == True:
