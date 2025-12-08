@@ -123,6 +123,7 @@ def refresh_directory(
             ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=12, opacity=0.5),
         ]),
         height=24,
+        alignment=ft.alignment.top_center,
         padding=ft.padding.symmetric(horizontal=1, vertical=1),
         border_radius=8,
         ink=True,
@@ -130,7 +131,7 @@ def refresh_directory(
     )
     back.on_hover = rd_hover
     dir_list.controls.append(back)
-    dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),)
+    dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
     # 親フォルダ
     if p.parent != p:
         dir_list.controls.append(make_list_item(
