@@ -7,6 +7,7 @@
 import flet as ft
 import os
 import png
+import zlib
 from pathlib import Path
 from datetime import datetime
 # 独自モジュール
@@ -125,6 +126,8 @@ def update_metadata(
                     text = data.decode("latin1", errors="ignore")
                     if "::" in text:
                         k, v = text.split("::", 1)
+                        metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
+                        metadata_text.controls.append(ft.Text(f"{ctype}: ", weight=ft.FontWeight.BOLD))
                         metadata_text.controls.append(ft.Text(f"{k}: {v}"))
                     else:
                         positive_index = text.find('parameters')
@@ -153,10 +156,48 @@ def update_metadata(
                                 other_textarea()
                         else:
                             #それ以外
-                            metadata_text.controls.append(ft.Text(f"tEXt:\n{text}"))
-                elif ctype in ("iTXt", "zTXt"):
+                            metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
+                            metadata_text.controls.append(ft.Text(f"{ctype}: ", weight=ft.FontWeight.BOLD))
+                            metadata_text.controls.append(ft.Text(f"{text}"))
+                elif ctype == "zTXt":
                     metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
-                    metadata_text.controls.append(ft.Text(f"{ctype}: あり"))
+                    metadata_text.controls.append(ft.Text(f"{ctype}: ", weight=ft.FontWeight.BOLD))
+                    try:
+                        keyword_end = data.index(b"\0")
+                        keyword = data[:keyword_end].decode("latin1")
+                        compressed = data[keyword_end+2:]  # +1 for null, +1 for compression method
+                        decompressed = zlib.decompress(compressed)
+                        text = decompressed.decode("utf-8", errors="replace")
+                        metadata_text.controls.append(ft.Text(f"{keyword}: {text}"))
+                    except Exception as e:
+                        metadata_text.controls.append(ft.Text(f"デコード失敗({e})", color=ft.Colors.RED))
+                elif ctype == "iTXt":
+                    metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
+                    metadata_text.controls.append(ft.Text(f"{ctype}: ", weight=ft.FontWeight.BOLD))
+                    try:
+                        null1 = data.index(b"\0")
+                        keyword = data[:null1].decode("latin1")
+                        compression_flag = data[null1+1]
+                        compression_method = data[null1+2]
+                        lang_tag_end = data.index(b"\0", null1+3)
+                        lang_tag = data[null1+3:lang_tag_end].decode("utf-8", errors="ignore")
+                        translated_keyword_end = data.index(b"\0", lang_tag_end+1)
+                        translated_keyword = data[lang_tag_end+1:translated_keyword_end].decode("utf-8", errors="replace")
+                        text_data = data[translated_keyword_end+1:]
+                        if compression_flag == 1:  # 圧縮されている（zlib）
+                            if compression_method != 0:
+                                text = f"不明な圧縮方式"
+                            else:
+                                text = zlib.decompress(text_data).decode("utf-8", errors="replace")
+                        else:
+                            text = text_data.decode("utf-8", errors="replace")
+                        if lang_tag != "":
+                            metadata_text.controls.append(ft.Text(f"language tag: {lang_tag}"))
+                        if translated_keyword != "":
+                            metadata_text.controls.append(ft.Text(f"translated keyword: {translated_keyword}"))
+                        metadata_text.controls.append(ft.Text(f"{keyword}: {text}"))
+                    except Exception as e:
+                        metadata_text.controls.append(ft.Text(f"デコード失敗({e})", color=ft.Colors.RED))
         # ファイル情報
         metadata_text.controls.extend([
             ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
