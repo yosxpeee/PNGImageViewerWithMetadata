@@ -288,6 +288,6 @@ def main(page: ft.Page):
         left_panel, center_panel, right_panel, 
         current_path_text, metadata_text, dir_list, theme_colors)
     # 起動時にドライブ一覧表示
-    lp.show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
+    lp.navigate_to(page, "<DRIVES>", metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
 #起動処理
 ft.app(target=main)

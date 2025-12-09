@@ -27,4 +27,3 @@ def read():
 def save(settings):
     with open(SETTING_JSON_FILE, 'w') as f:
         json.dump(settings, f, indent=4)
-

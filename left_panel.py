@@ -214,7 +214,7 @@ def make_list_item(
     #クリック時のイベントハンドラ
     def on_click_handler(e):
         if path == "<DRIVES>":
-            show_drives(page, metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
+            navigate_to(page, "<DRIVES>", metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
         elif is_folder:
             navigate_to(page, path, metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
         else:
@@ -238,18 +238,3 @@ def make_list_item(
     )
     container.on_hover = mli_hover
     return container
-
-####################
-# ドライブ一覧表示
-####################
-def show_drives(
-        page: ft.Page, 
-        metadata_text: ft.Column, 
-        current_path_text: ft.Text, 
-        theme_colors: dict, 
-        dir_list: ft.ListView, 
-        image_view: ft.Image, 
-        thumbnail_grid: ft.GridView,
-        settings: dict
-    ):
-    navigate_to(page, "<DRIVES>", metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
