@@ -13,12 +13,15 @@ import flet as ft
 import win32api
 import win32con
 import win32gui
+import warnings
 # 独自モジュール
 import themes
+import setting
 import left_panel as lp
 import center_panel as cp
 
-SETTING_JSON_FILE = "viewer_settings.json"
+# 開発中うざったいので設定
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 ####################
 # メイン関数
@@ -57,8 +60,7 @@ def main(page: ft.Page):
     # イベント処理：ウインドウを閉じる
     def window_event(e):
         if e.data == "close":
-            with open(SETTING_JSON_FILE, 'w') as f:
-                json.dump(settings, f, indent=4)
+            setting.save(settings)
             page.window.prevent_close = False
             page.window.close()
     # イベント処理：テーマ切り替えのスイッチ
@@ -84,7 +86,6 @@ def main(page: ft.Page):
         menu_y = e.global_y
         # UI作成
         cp.create_image_context_menu(page, menu_x, menu_y, current_path)
-
     # イベント処理：グリッド表示に戻る
     def return_to_grid(e):
         if image_view.visible:
@@ -128,21 +129,23 @@ def main(page: ft.Page):
                     page.scroll_position_history.append(tmpInfo)
                     #print("同じ場所がないかつPOS:0以上なので追加")
             #print(page.scroll_position_history)
-    # イベント処理：戻る
-    def go_back():
+    # イベント処理：マウスの戻るボタン
+    async def async_go_back():
         if page.history_index > 0:
             page.history_index -= 1
-            lp.refresh_directory(page, page.navigation_history[page.history_index], metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
-    async def async_go_back():
-        go_back()
+            lp.refresh_directory(
+                page, 
+                page.navigation_history[page.history_index], 
+                metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
         page.update()
-    # イベント処理：進む
-    def go_forward():
+    # イベント処理：マウスの進むボタン
+    async def async_go_forward():
         if page.history_index + 1 < len(page.navigation_history):
             page.history_index += 1
-            lp.refresh_directory(page, page.navigation_history[page.history_index], metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
-    async def async_go_forward():
-        go_forward()
+            lp.refresh_directory(
+                page, 
+                page.navigation_history[page.history_index], 
+                metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
         page.update()
     # イベントリスナー：マウス
     def start_mouse_back_forward_listener():
@@ -179,11 +182,7 @@ def main(page: ft.Page):
     start_mouse_back_forward_listener()
 
     # 設定読み込み(ない場合は初期設定をする)
-    if os.path.exists(SETTING_JSON_FILE):
-        with open(SETTING_JSON_FILE) as f:
-            settings = json.load(f)
-    else:
-        settings['dark_theme'] = False
+    settings = setting.read()
     theme_colors = themes.ThemeColors.dark() if settings['dark_theme'] else themes.ThemeColors.light()
 
     # ── 左ペイン：テーマ切り替えスイッチ、ファイルブラウザ ──

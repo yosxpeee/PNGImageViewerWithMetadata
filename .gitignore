@@ -1,4 +1,5 @@
 .vscode
 __pycache__
+storage
 venv
 viewer_settings.json
