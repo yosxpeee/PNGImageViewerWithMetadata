@@ -12,6 +12,7 @@ import io
 import asyncio
 # 独自モジュール
 import right_panel as rp
+import clipboard
 
 ####################
 # サムネイルグリッド表示
@@ -125,4 +126,75 @@ def select_image(
     thumbnail_grid.visible = False  # グリッドを隠す
     page.current_image_path = path
     rp.update_metadata(path, page, metadata_text, theme_colors, settings)
+    page.update()
+
+####################
+# 右クリックメニュー
+####################
+def create_image_context_menu(
+        page: ft.Page, 
+        menu_x, 
+        menu_y,
+        current_path,
+    ):
+    # 自前で作るコンテキストメニュー（ポップアップ風）
+    context_menu = ft.Container(
+        width=240,
+        bgcolor=ft.Colors.with_opacity(0.98, ft.Colors.SURFACE),
+        border_radius=8,
+        shadow=ft.BoxShadow(
+            blur_radius=16,
+            color=ft.Colors.with_opacity(0.25, ft.Colors.BLACK),
+            offset=(0, 4),
+        ),
+        padding=4,
+        content=ft.Column([
+            ft.ListTile(
+                leading=ft.Icon(ft.Icons.COPY_ALL, size=18),
+                title=ft.Text("画像をクリップボードにコピー\n(透明度維持)", size=12),
+                on_click=lambda e: (
+                    clipboard.copy_image_to_clipboard(page, current_path, True),
+                    page.overlay.remove(overlay),
+                    page.update()
+                ),
+            ),
+            ft.ListTile(
+                leading=ft.Icon(ft.Icons.COPY, size=18),
+                title=ft.Text("画像をクリップボードにコピー\n(透明度なし)", size=12),
+                on_click=lambda e: (
+                    clipboard.copy_image_to_clipboard(page, current_path, False),
+                    page.overlay.remove(overlay),
+                    page.update()
+                ),
+            ),
+            ft.ListTile(
+                leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
+                title=ft.Text("フォルダをエクスプローラーで開く", size=12),
+                on_click=lambda e: (
+                    # 選択された画像をハイライトして表に表示
+                    __import__("subprocess").Popen(
+                        f'explorer /select,"{current_path}"'
+                    ),
+                    page.overlay.remove(overlay),
+                    page.update()
+                ),
+            ),
+            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+            ft.ListTile(
+                leading=ft.Icon(ft.Icons.CLOSE, size=18),
+                title=ft.Text("キャンセル", size=12, color=ft.Colors.ERROR),
+                on_click=lambda e: (
+                    page.overlay.remove(overlay),
+                    page.update()
+                ),
+            ),
+        ], spacing=0),
+    )
+    # ポップアップとして表示（Stackでオーバーレイ）
+    overlay = ft.Stack([
+        ft.Container(bgcolor=ft.Colors.TRANSPARENT, on_click=lambda e: (page.overlay.remove(overlay), page.update()), expand=True),
+        ft.Container(content=context_menu, top=menu_y - 100, left=menu_x - 120, animate=ft.Animation(150, "decelerate")),
+    ], expand=True)
+    page.overlay.append(overlay)
+    context_menu.open = True
     page.update()
