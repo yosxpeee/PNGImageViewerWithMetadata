@@ -11,6 +11,7 @@ from pathlib import Path
 import win32api
 # 独自モジュール
 import center_panel as cp
+import scroll_record
 
 ####################
 # 履歴のナビゲート
@@ -182,17 +183,7 @@ def refresh_directory(
         dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
     page.update()
     # スクロール位置の復元(人力実装)
-    for index, item in enumerate(page.scroll_position_history_left):
-        if current_path_text.value in item:
-            #print("見つかりました："+str(page.scroll_position_history_left[index]))
-            info = page.scroll_position_history_left[index]
-            if page.window.height == info[current_path_text.value]["window_height"]:
-                # 高さが同じなら復元する
-                dir_list.scroll_to(info[current_path_text.value]["scroll_pos"])
-                page.update()
-            else:
-                # 高さが違うなら復元せず履歴削除(復元しない＝POS:0なので履歴不要)
-                page.scroll_position_history_left.pop(index)
+    scroll_record.replay_left_scroll_position(page, current_path_text, dir_list)
 
 ####################
 # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成

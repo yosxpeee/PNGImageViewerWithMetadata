@@ -13,6 +13,7 @@ import asyncio
 # 独自モジュール
 import right_panel as rp
 import clipboard
+import scroll_record
 
 ####################
 # サムネイルグリッド表示
@@ -110,17 +111,7 @@ async def show_thumbnails_async(
     ])
     page.update()
     # スクロール位置復元(人力実装)
-    for index, item in enumerate(page.scroll_position_history_center):
-        if current_path_text.value in item:
-            #print("見つかりました："+str(page.scroll_position_history_center[index]))
-            info = page.scroll_position_history_center[index]
-            if page.window.height == info[current_path_text.value]["window_height"]:
-                # 高さが同じなら復元する
-                thumbnail_grid.scroll_to(info[current_path_text.value]["scroll_pos"])
-                page.update()
-            else:
-                # 高さが違うなら復元せず履歴削除(復元しない＝POS:0なので履歴不要)
-                page.scroll_position_history_center.pop(index)
+    scroll_record.replay_center_scroll_position(page, current_path_text, thumbnail_grid)
 
 ####################
 # 画像選択
