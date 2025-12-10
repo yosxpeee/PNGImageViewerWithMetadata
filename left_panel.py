@@ -83,7 +83,7 @@ def refresh_directory(
                     # PNGがあれば非同期でサムネイル読み込み開始
                     page.run_task(
                         cp.show_thumbnails_async, 
-                        page, path, image_view, thumbnail_grid, metadata_text, theme_colors, settings
+                        page, path, current_path_text, image_view, thumbnail_grid, metadata_text, theme_colors, settings
                     )
                 else:
                     # PNGなし
@@ -182,17 +182,17 @@ def refresh_directory(
         dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
     page.update()
     # スクロール位置の復元(人力実装)
-    for index, item in enumerate(page.scroll_position_history):
+    for index, item in enumerate(page.scroll_position_history_left):
         if current_path_text.value in item:
-            #print("見つかりました："+str(page.scroll_position_history[index]))
-            info = page.scroll_position_history[index]
+            #print("見つかりました："+str(page.scroll_position_history_left[index]))
+            info = page.scroll_position_history_left[index]
             if page.window.height == info[current_path_text.value]["window_height"]:
                 # 高さが同じなら復元する
                 dir_list.scroll_to(info[current_path_text.value]["scroll_pos"])
                 page.update()
             else:
                 # 高さが違うなら復元せず履歴削除(復元しない＝POS:0なので履歴不要)
-                page.scroll_position_history.pop(index)
+                page.scroll_position_history_left.pop(index)
 
 ####################
 # 高さ調整可能＆ホバーエフェクトの汎用アイテム生成

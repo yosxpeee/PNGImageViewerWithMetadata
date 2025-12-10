@@ -20,6 +20,7 @@ import clipboard
 async def show_thumbnails_async(
         page: ft.Page,
         folder_path: str,
+        current_path_text: ft.Text,
         image_view: ft.Image,
         thumbnail_grid: ft.GridView,
         metadata_text: ft.Column,
@@ -108,6 +109,18 @@ async def show_thumbnails_async(
         ft.Text(folder_path, size=12, color=ft.Colors.OUTLINE),
     ])
     page.update()
+    # スクロール位置復元(人力実装)
+    for index, item in enumerate(page.scroll_position_history_center):
+        if current_path_text.value in item:
+            #print("見つかりました："+str(page.scroll_position_history_center[index]))
+            info = page.scroll_position_history_center[index]
+            if page.window.height == info[current_path_text.value]["window_height"]:
+                # 高さが同じなら復元する
+                thumbnail_grid.scroll_to(info[current_path_text.value]["scroll_pos"])
+                page.update()
+            else:
+                # 高さが違うなら復元せず履歴削除(復元しない＝POS:0なので履歴不要)
+                page.scroll_position_history_center.pop(index)
 
 ####################
 # 画像選択
