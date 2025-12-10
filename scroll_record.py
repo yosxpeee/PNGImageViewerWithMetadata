@@ -11,7 +11,7 @@ import flet as ft
 def record_left_scroll_position(
         page: ft.Page, 
         current_path_text: ft.Text, 
-        scroll_pos
+        scroll_pos: dict
     ):
     if scroll_pos["t"] == "end":
         tmpInfo = {current_path_text.value:{"scroll_pos":scroll_pos["p"], "window_height":page.window.height}}
@@ -37,9 +37,9 @@ def record_left_scroll_position(
 # サムネイルグリッドのスクロール位置記録
 ####################
 def record_center_scroll_position(
-        page,
-        current_path_text,
-        scroll_pos
+        page: ft.Page, 
+        current_path_text: ft.Text,
+        scroll_pos: dict
     ):
     if scroll_pos["t"] == "end":
             tmpInfo = {current_path_text.value:{"scroll_pos":scroll_pos["p"], "window_height":page.window.height}}
