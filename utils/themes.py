@@ -54,6 +54,11 @@ class ThemeManager:
         # 現在パスの色
         if hasattr(page, "current_path_text"):
             page.current_path_text.color = self.colors["text_secondary"]
-
+        # 右パネルのタイトル色を即時更新
+        if right_panel and right_panel.metadata_text.controls:
+            for ctrl in right_panel.metadata_text.controls:
+                if isinstance(ctrl, ft.Text) and ctrl.value in ["PNG メタデータ", "ファイル情報"]:
+                    ctrl.color = self.colors["meta_secondary_title"]
+                    ctrl.update()
         # 一気に更新！
         page.update()
