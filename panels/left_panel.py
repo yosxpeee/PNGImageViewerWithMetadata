@@ -1,231 +1,216 @@
-########################################
-# left_panel.py
-#
-# 左パネルの部品(人力でコード分割)
-########################################
-# pythonモジュール
 import flet as ft
 import os
 import string
 from pathlib import Path
 import win32api
-# 独自モジュール
-import center_panel as cp
-import scroll_record
 
-####################
-# 履歴のナビゲート
-####################
-def navigate_to(
-        page: ft.Page, 
-        path: str, 
-        metadata_text: ft.Column, 
-        current_path_text: ft.Text, 
-        theme_colors: dict, 
-        dir_list: ft.ListView, 
-        image_view: ft.Image,
-        thumbnail_grid: ft.GridView,
-        settings: dict,
-    ):
-    if page.history_index + 1 < len(page.navigation_history):
-        page.navigation_history = page.navigation_history[:page.history_index + 1]
-    page.navigation_history.append(path)
-    page.history_index += 1
-    refresh_directory(page, path, metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
+from panels.center_panel import CenterPanel
+from utils.scroll_record import record_left_scroll_position, replay_left_scroll_position
 
-####################
-# ディレクトリ情報更新
-####################
-def refresh_directory(
-        page: ft.Page, 
-        path: str, 
-        metadata_text: ft.Column, 
-        current_path_text: ft.Text, 
-        theme_colors: dict, 
-        dir_list: ft.ListView, 
-        image_view: ft.Image,
-        thumbnail_grid: ft.GridView,
-        settings: dict,
-    ):
-    # ホバーエフェクト
-    def rd_hover(e):
-        back.bgcolor = theme_colors["selected"] if e.data == "true" else None
-        back.update()
 
-    dir_list.controls.clear()
-    page.current_image_path = None
-    # ドライブ一覧の特別処理
-    if path == "<DRIVES>":
-        current_path_text.value = "ドライブを選択してください"
-        for letter in string.ascii_uppercase:
-            drive = f"{letter}:\\"
-            if os.path.exists(drive):
-                label = win32api.GetVolumeInformation(drive)[0] or "ドライブ"
-                dir_list.controls.append(make_list_item(
-                    f"{drive} [{label}]", 
-                    ft.Icons.STORAGE, 
-                    page, 
-                    drive, 
-                    metadata_text,
-                    current_path_text, 
-                    theme_colors, 
-                    dir_list, 
-                    image_view, 
-                    thumbnail_grid,
-                    settings,
-                    True
-                ))
-    # フォルダならサムネイルチェック
-    if path != "<DRIVES>":
-        p = Path(path)
-        if p.is_dir():
-            try:
-                if any(item.suffix.lower() == ".png" for item in p.iterdir()):
-                    # PNGがあれば非同期でサムネイル読み込み開始
-                    page.run_task(
-                        cp.show_thumbnails_async, 
-                        page, path, current_path_text, image_view, thumbnail_grid, metadata_text, theme_colors, settings
-                    )
-                else:
-                    # PNGなし
-                    image_view.visible = False
-                    thumbnail_grid.visible = False
-                    metadata_text.controls.clear()
-                    metadata_text.controls.extend([
-                        ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                        ft.Text("このフォルダにPNG画像がありません", size=16),
-                    ])
-                    page.update()
-            except PermissionError:
-                metadata_text.controls.clear()
-                metadata_text.controls.extend([
-                    ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                    ft.Text("このフォルダにPNG画像がありません", size=16),
-                ])
-                page.update()
-    # ドライブ一覧ならサムネイル非表示
-    else:
-        image_view.visible = False
-        thumbnail_grid.visible = False
-        metadata_text.controls.clear()
-        metadata_text.controls.extend([
-            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-            ft.Text("画像を選択してください", size=18),
-        ])
-        page.update()
-        return
-    current_path_text.value = f"現在: {path}"
-    p = Path(path)
-    # ドライブ一覧に戻る
-    back = ft.Container(
-        content=ft.Row([
-            ft.Icon(ft.Icons.COMPUTER, size=14),
-            ft.Text("ドライブ一覧に戻る", expand=True, size=14),
-            ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, opacity=0.5),
-        ]),
-        height=32,
-        alignment=ft.alignment.top_center,
-        padding=ft.padding.symmetric(horizontal=1, vertical=1),
-        border_radius=8,
-        ink=True,
-        on_click=lambda e: navigate_to(page, "<DRIVES>", metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings),
-    )
-    back.on_hover = rd_hover
-    dir_list.controls.append(back)
-    dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
-    # 親フォルダ
-    if p.parent != p:
-        dir_list.controls.append(make_list_item(
-            ".. (親フォルダ)", 
-            ft.Icons.ARROW_BACK, 
-            page, 
-            str(p.parent), 
-            metadata_text, 
-            current_path_text, 
-            theme_colors, 
-            dir_list, 
-            image_view, 
-            thumbnail_grid, 
-            settings, 
-            True
-        ))
-    try:
-        for item in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
-            if item.is_dir():
-                dir_list.controls.append(make_list_item(
-                    item.name + "/", 
-                    ft.Icons.FOLDER, 
-                    page, str(item), 
-                    metadata_text, 
-                    current_path_text, 
-                    theme_colors, 
-                    dir_list, 
-                    image_view, 
-                    thumbnail_grid, 
-                    settings, 
-                    True
-                ))
-            elif item.suffix.lower() == ".png":
-                dir_list.controls.append(make_list_item(
-                    item.name, 
-                    ft.Icons.IMAGE, 
-                    page, 
-                    str(item), 
-                    metadata_text, 
-                    current_path_text, 
-                    theme_colors, 
-                    dir_list, 
-                    image_view, 
-                    thumbnail_grid, 
-                    settings, 
-                False))
-    except PermissionError:
-        dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
-    page.update()
-    # スクロール位置の復元(人力実装)
-    scroll_record.replay_left_scroll_position(page, current_path_text, dir_list)
+class LeftPanel:
+    instance = None
 
-####################
-# 高さ調整可能＆ホバーエフェクトの汎用アイテム生成
-####################
-def make_list_item(
-        name: str, 
-        icon: ft.Icon, 
-        page: ft.Page, 
-        path: str, 
-        metadata_text: ft.Column, 
-        current_path_text: ft.Text,
-        theme_colors: dict, 
-        dir_list: ft.ListView,
-        image_view: ft.Image, 
-        thumbnail_grid: ft.GridView,
-        settings: dict,
-        is_folder=False
-    ):
-    #クリック時のイベントハンドラ
-    def on_click_handler(e):
+    def __init__(self, page, settings, theme_manager):
+        self.page = page
+        self.settings = settings
+        self.theme_manager = theme_manager
+        LeftPanel.instance = self
+
+        self.current_path_text = ft.Text("", size=12, italic=False, color=theme_manager.colors["text_secondary"])
+
+        page.current_path_text = ft.Text("", size=12, color=theme_manager.colors["text_secondary"])
+        self.current_path_text = page.current_path_text
+        
+        self.dir_list = ft.ListView(
+            expand=True,
+            spacing=0,
+            padding=0,
+            on_scroll=self.on_browser_scroll,
+        )
+
+        theme_switch = ft.Switch(
+            value=settings["dark_theme"],
+            on_change=self.toggle_theme,
+            label="ダークモード",
+            label_position=ft.LabelPosition.LEFT,
+            height=36,
+        )
+
+        self.container = ft.Container(
+            content=ft.Column([
+                ft.Row([
+                    ft.Icon(ft.Icons.EXPLORE),
+                    ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
+                    ft.Container(expand=True),
+                    theme_switch,
+                ]),
+                self.current_path_text,
+                ft.Divider(height=1, color=theme_manager.colors["divider"]),
+                self.dir_list,
+            ], expand=True),
+            padding=10,
+            width=340,
+            bgcolor=theme_manager.colors["bg_panel"],
+        )
+
+    def toggle_theme(self, e):
+        self.settings["dark_theme"] = e.control.value
+        self.theme_manager.toggle_theme(self.page, self.settings, self, None, None, self.current_path_text, None, self.dir_list)
+        self.page.update()
+
+    def on_browser_scroll(self, e):
+        if e.data:
+            import json
+            scroll_pos = json.loads(e.data)
+            record_left_scroll_position(self.page, self.current_path_text, scroll_pos)
+
+    def navigate_to(self, path: str):
+        if self.page.history_index + 1 < len(self.page.navigation_history):
+            self.page.navigation_history = self.page.navigation_history[:self.page.history_index + 1]
+        self.page.navigation_history.append(path)
+        self.page.history_index += 1
+        self.refresh_directory(path)
+
+    def refresh_directory(self, path: str):
+        self.dir_list.controls.clear()
+        self.page.current_image_path = None
+        theme_colors = self.theme_manager.colors
+
+        # ── ドライブ一覧の特別処理 ──
         if path == "<DRIVES>":
-            navigate_to(page, "<DRIVES>", metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
-        elif is_folder:
-            navigate_to(page, path, metadata_text, current_path_text, theme_colors, dir_list, image_view, thumbnail_grid, settings)
-        else:
-            cp.select_image(page, path, metadata_text, theme_colors, image_view, thumbnail_grid, settings)
-    #ホバーエフェクト
-    def mli_hover(e):
-        container.bgcolor = theme_colors["hover"] if e.data == "true" else None
-        container.update()
+            self.current_path_text.value = "ドライブを選択してください"
 
-    container = ft.Container(
-        content=ft.Row([
-            ft.Icon(icon, size=14),
-            ft.Text(name, expand=True, size=14),
-            ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, opacity=0.5),
-        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        height=24,
-        padding=ft.padding.symmetric(horizontal=1, vertical=1),
-        border_radius=8,
-        ink=True,
-        on_click=on_click_handler,
-    )
-    container.on_hover = mli_hover
-    return container
+            for letter in string.ascii_uppercase:
+                drive = f"{letter}:\\"
+                if os.path.exists(drive):
+                    try:
+                        label = win32api.GetVolumeInformation(drive)[0] or "ローカルディスク"
+                        self.dir_list.controls.append(self.make_list_item(
+                            f"{drive} [{label}]",
+                            ft.Icons.STORAGE,
+                            path=drive,
+                            is_folder=True,
+                            theme_colors=theme_colors
+                        ))
+                    except:
+                        # アクセスできないドライブ（CD-ROM空など）は無視
+                        pass
+
+            # ドライブ一覧ではサムネイル非表示
+            if CenterPanel.instance:
+                CenterPanel.instance.show_no_images()
+
+        # ── 通常のフォルダ処理 ──
+        else:
+            p = Path(path)
+            self.current_path_text.value = f"現在: {path}"
+
+            # サムネイル読み込み判定
+            try:
+                has_png = any(item.suffix.lower() == ".png" for item in p.iterdir())
+                if has_png:
+                    self.page.run_task(CenterPanel.instance.show_thumbnails_async, path)
+                else:
+                    CenterPanel.instance.show_no_images()
+            except PermissionError:
+                CenterPanel.instance.show_no_images()
+
+            # 「ドライブ一覧に戻る」ボタン
+            back = ft.Container(
+                content=ft.Row([
+                    ft.Icon(ft.Icons.COMPUTER, size=14),
+                    ft.Text("ドライブ一覧に戻る", size=14),
+                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, opacity=0.5),
+                ]),
+                height=32,
+                padding=4,
+                border_radius=8,
+                ink=True,
+                on_click=lambda _: self.navigate_to("<DRIVES>"),
+                on_hover=lambda e: (
+                    setattr(e.control, "bgcolor", theme_colors["selected"] if e.data == "true" else None),
+                    e.control.update()
+                )
+            )
+            self.dir_list.controls.append(back)
+            self.dir_list.controls.append(ft.Divider(height=1, color=theme_colors["divider"]))
+
+            # 親フォルダ
+            if p.parent != p:
+                self.dir_list.controls.append(self.make_list_item(
+                    ".. (親フォルダ)",
+                    ft.Icons.ARROW_BACK,
+                    path=str(p.parent),
+                    is_folder=True,
+                    theme_colors=theme_colors
+                ))
+
+            # ファイル・フォルダ一覧
+            try:
+                items = sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
+                for item in items:
+                    if item.is_dir():
+                        self.dir_list.controls.append(self.make_list_item(
+                            item.name + "/",
+                            ft.Icons.FOLDER,
+                            path=str(item),
+                            is_folder=True,
+                            theme_colors=theme_colors
+                        ))
+                    elif item.suffix.lower() == ".png":
+                        self.dir_list.controls.append(self.make_list_item(
+                            item.name,
+                            ft.Icons.IMAGE,
+                            path=str(item),
+                            theme_colors=theme_colors
+                        ))
+            except PermissionError:
+                self.dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
+
+        # スクロール位置復元（共通）
+        replay_left_scroll_position(self.page, self.current_path_text, self.dir_list)
+        self.page.update()
+
+    def make_list_item(self, name: str, icon, path: str, is_folder=False, theme_colors=None):
+        if theme_colors is None:
+            theme_colors = self.theme_manager.colors
+
+        def on_click_handler(e):
+            if is_folder:
+                self.navigate_to(path)
+            else:
+                CenterPanel.instance.select_image(path)
+
+        def mli_hover(e):
+            container.bgcolor = theme_colors["hover"] if e.data == "true" else None
+            container.update()
+        
+        #container.on_hover = mli_hover
+        container = ft.Container(
+            content=ft.Row([
+                ft.Icon(icon, size=14),
+                ft.Text(name, expand=True, size=14),
+                ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, opacity=0.5),
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            height=24,
+            padding=ft.padding.symmetric(horizontal=1, vertical=1),
+            border_radius=8,
+            ink=True,
+            on_click=on_click_handler,
+        )
+        container.on_hover = mli_hover
+        return container
+
+    async def go_back(self):
+        if self.page.history_index > 0:
+            self.page.history_index -= 1
+            self.refresh_directory(self.page.navigation_history[self.page.history_index])
+        self.page.update()
+
+    async def go_forward(self):
+        if self.page.history_index + 1 < len(self.page.navigation_history):
+            self.page.history_index += 1
+            self.refresh_directory(self.page.navigation_history[self.page.history_index])
+        self.page.update()
+    

@@ -1,204 +1,213 @@
-########################################
-# center_panel.py
-#
-# 中央パネルの部品(人力でコード分割)
-########################################
-# pythonモジュール
 import flet as ft
 from pathlib import Path
 from PIL import Image
 import base64
 import io
+import os
 import asyncio
-# 独自モジュール
-import right_panel as rp
-import clipboard
-import scroll_record
 
-####################
-# サムネイルグリッド表示
-####################
-async def show_thumbnails_async(
-        page: ft.Page,
-        folder_path: str,
-        current_path_text: ft.Text,
-        image_view: ft.Image,
-        thumbnail_grid: ft.GridView,
-        metadata_text: ft.Column,
-        theme_colors: dict,
-        settings: dict
-    ):
-    # ローディングオーバーレイを取得
-    loading_overlay = page.overlay[0] 
-    loading_overlay.visible = True
-    loading_overlay.content.controls[1].value = "読み込み中…"
-    page.update()
-    # 既存サムネイルクリア
-    thumbnail_grid.controls.clear()
-    try:
-        png_files = [p for p in Path(folder_path).iterdir() if p.suffix.lower() == ".png"]
-        png_files = sorted(png_files, key=lambda x: x.name.lower())
-    except Exception as e:
-        loading_overlay.visible = False
-        metadata_text.controls.clear()
-        metadata_text.controls.append(ft.Text(f"フォルダ読み込みエラー: {e}", color="red"))
-        page.update()
-        return
-    if not png_files:
-        loading_overlay.visible = False
-        image_view.visible = False
-        thumbnail_grid.visible = False
-        metadata_text.controls.clear()
-        metadata_text.controls.extend([
-            ft.Divider(height=1),
-            ft.Text("このフォルダにPNG画像がありません", size=16),
-        ])
-        page.update()
-        return
-    # グリッド表示開始
-    image_view.visible = False
-    thumbnail_grid.visible = True
-    for i, png_path in enumerate(png_files):
-        # 別のフォルダに移動されたら即キャンセル
-        if page.navigation_history[page.history_index] != folder_path:
-            loading_overlay.visible = False
-            page.update()
-            return
+from panels.right_panel import RightPanel
+from utils.scroll_record import record_center_scroll_position, replay_center_scroll_position
+from utils.clipboard import copy_image_to_clipboard
+
+class CenterPanel:
+    instance = None
+
+    def __init__(self, page, settings, theme_manager):
+        self.page = page
+        self.settings = settings
+        self.theme_manager = theme_manager
+        CenterPanel.instance = self
+
+        self.image_view = ft.Image(
+            src="",
+            fit=ft.ImageFit.CONTAIN,
+            expand=True,
+            visible=False,
+        )
+        self.thumbnail_grid = ft.GridView(
+            runs_count=5,
+            max_extent=180,
+            child_aspect_ratio=1.0,
+            spacing=10,
+            run_spacing=10,
+            padding=20,
+            visible=False,
+            on_scroll=self.on_grid_scroll,
+        )
+        center_content_stack = ft.Stack([
+            self.image_view,
+            self.thumbnail_grid,
+        ], expand=True)
+        self.container = ft.Container(
+            content=ft.GestureDetector(
+                content=center_content_stack,
+                on_secondary_tap_down=self.show_image_context_menu,
+                on_tap_down=self.return_to_grid,
+            ),
+            alignment=ft.alignment.center,
+            expand=2,
+            bgcolor=theme_manager.colors["bg_main"],
+        )
+
+    def on_grid_scroll(self, e):
+        if e.data:
+            import json
+            scroll_pos = json.loads(e.data)
+            record_center_scroll_position(self.page, self.page.current_path_text, scroll_pos)
+
+    async def show_thumbnails_async(self, folder_path: str):
+        loading_overlay = self.page.overlay[0]
+        loading_overlay.visible = True
+        loading_overlay.content.controls[1].value = "読み込み中…"
+        self.page.update()
+
+        self.thumbnail_grid.controls.clear()
         try:
-            with Image.open(png_path) as img:
-                img.thumbnail((160, 160))
-                byte_io = io.BytesIO()
-                img.save(byte_io, format="PNG")
-                base64_str = base64.b64encode(byte_io.getvalue()).decode()
-            container = ft.Container(
-                width=160, height=160,
-                border_radius=12,
-                padding=6,
-                bgcolor=ft.Colors.GREY, #灰色固定にする
-                alignment=ft.alignment.center,
-                shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.3, "#000000")),
-                animate_scale=ft.Animation(300, "ease_out_back"),
-                scale=1.0,
-                content=ft.Image(src_base64=base64_str, fit=ft.ImageFit.CONTAIN),
-                tooltip=None, #邪魔なのでツールチップなし
-            )
-            # ホバーで拡大
-            container.on_hover = lambda e, c=container: (
-                setattr(c, "scale", 1.12 if e.data == "true" else 1.0) or c.update()
-            )
-            # クリックで画像表示
-            container.on_click = lambda e, p=str(png_path): (
-                setattr(page, "current_image_path", p),
-                select_image(page, p, metadata_text, theme_colors, image_view, thumbnail_grid, settings)
-            )
-            thumbnail_grid.controls.append(container)
-            # 10枚ごとに更新
-            if i % 10 == 0 or i == len(png_files) - 1:
-                percent = int((i + 1) / len(png_files) * 100)
-                loading_overlay.content.controls[1].value = f"読み込み中… {i+1}/{len(png_files)} ({percent}%)"
-                page.update()
-                await asyncio.sleep(0.01) # 標準のasyncioを使う
+            png_files = [p for p in Path(folder_path).iterdir() if p.suffix.lower() == ".png"]
+            png_files = sorted(png_files, key=lambda x: x.name.lower())
         except Exception as e:
-            print(f"サムネイル生成失敗 {png_path}: {e}")
-            # エラーでもグリッドには表示しない（スキップ）
-    # 読み込み完了
-    loading_overlay.visible = False
-    metadata_text.controls.clear()
-    metadata_text.controls.extend([
-        ft.Divider(height=1),
-        ft.Text(f"サムネイルビュー: {len(thumbnail_grid.controls)} 枚", size=16, weight=ft.FontWeight.BOLD),
-        ft.Text(folder_path, size=12, color=ft.Colors.OUTLINE),
-    ])
-    page.update()
-    # スクロール位置復元(人力実装)
-    scroll_record.replay_center_scroll_position(page, current_path_text, thumbnail_grid)
+            loading_overlay.visible = False
+            RightPanel.instance.update_no_selection()
+            self.page.update()
+            return
 
-####################
-# 画像選択
-####################
-def select_image(
-        page: ft.Page, 
-        path: str, 
-        metadata_text: ft.Column, 
-        theme_colors: dict, 
-        image_view: ft.Image, 
-        thumbnail_grid: ft.GridView,
-        settings: dict
-    ):
-    image_view.src = path
-    image_view.visible = True
-    thumbnail_grid.visible = False  # グリッドを隠す
-    page.current_image_path = path
-    rp.update_metadata(path, page, metadata_text, theme_colors, settings)
-    page.update()
+        if not png_files:
+            loading_overlay.visible = False
+            self.show_no_images()
+            return
 
-####################
-# 右クリックメニュー
-####################
-def create_image_context_menu(
-        page: ft.Page, 
-        menu_x, 
-        menu_y,
-        current_path,
-    ):
-    # 自前で作るコンテキストメニュー（ポップアップ風）
-    context_menu = ft.Container(
-        width=240,
-        bgcolor=ft.Colors.with_opacity(0.98, ft.Colors.SURFACE),
-        border_radius=8,
-        shadow=ft.BoxShadow(
-            blur_radius=16,
-            color=ft.Colors.with_opacity(0.25, ft.Colors.BLACK),
-            offset=(0, 4),
-        ),
-        padding=4,
-        content=ft.Column([
-            ft.ListTile(
-                leading=ft.Icon(ft.Icons.COPY_ALL, size=18),
-                title=ft.Text("画像をクリップボードにコピー\n(透明度維持)", size=12),
-                on_click=lambda e: (
-                    clipboard.copy_image_to_clipboard(page, current_path, True),
-                    page.overlay.remove(overlay),
-                    page.update()
-                ),
+        self.image_view.visible = False
+        self.thumbnail_grid.visible = True
+        for i, png_path in enumerate(png_files):
+            if self.page.navigation_history[self.page.history_index] != folder_path:
+                loading_overlay.visible = False
+                self.page.update()
+                return
+            try:
+                with Image.open(png_path) as img:
+                    img.thumbnail((160, 160))
+                    byte_io = io.BytesIO()
+                    img.save(byte_io, format="PNG")
+                    base64_str = base64.b64encode(byte_io.getvalue()).decode()
+                container = ft.Container(
+                    width=160, height=160,
+                    border_radius=12,
+                    padding=6,
+                    bgcolor=ft.Colors.GREY,
+                    alignment=ft.alignment.center,
+                    shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.3, "#000000")),
+                    animate_scale=ft.Animation(300, "ease_out_back"),
+                    scale=1.0,
+                    content=ft.Image(src_base64=base64_str, fit=ft.ImageFit.CONTAIN),
+                )
+                container.on_hover = lambda e, c=container: (setattr(c, "scale", 1.12 if e.data == "true" else 1.0) or c.update())
+                container.on_click = lambda e, p=str(png_path): self.select_image(p)
+                self.thumbnail_grid.controls.append(container)
+
+                if i % 10 == 0 or i == len(png_files) - 1:
+                    percent = int((i + 1) / len(png_files) * 100)
+                    loading_overlay.content.controls[1].value = f"読み込み中… {i+1}/{len(png_files)} ({percent}%)"
+                    self.page.update()
+                    await asyncio.sleep(0.01)
+            except Exception as e:
+                print(f"サムネイル生成失敗 {png_path}: {e}")
+
+        loading_overlay.visible = False
+        RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), folder_path)
+        self.page.update()
+        replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
+
+    def select_image(self, path: str):
+        self.page.current_image_path = path
+        self.image_view.src = path
+        self.image_view.visible = True
+        self.thumbnail_grid.visible = False
+        RightPanel.instance.update_metadata(path)
+        self.page.update()
+
+    def return_to_grid(self, e):
+        if self.image_view.visible:
+            self.thumbnail_grid.visible = True
+            self.image_view.visible = False
+            self.page.current_image_path = None
+            for container in self.thumbnail_grid.controls:
+                if hasattr(container, "animate_scale") and container.scale != 1.0:
+                    container.scale = 1.0
+                    container.update()
+            RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), self.page.current_path_text.value)
+            self.page.update()
+            replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
+
+    def show_image_context_menu(self, e: ft.TapDownEvent):
+        if self.thumbnail_grid.visible or not self.image_view.visible:
+            return
+        current_path = self.page.current_image_path
+        if not current_path or not os.path.exists(current_path):
+            return
+        menu_x = e.global_x
+        menu_y = e.global_y
+        self.create_image_context_menu(menu_x, menu_y, current_path)
+
+    def create_image_context_menu(self, menu_x, menu_y, current_path):
+        context_menu = ft.Container(
+            width=240,
+            bgcolor=ft.Colors.with_opacity(0.98, ft.Colors.SURFACE),
+            border_radius=8,
+            shadow=ft.BoxShadow(
+                blur_radius=16,
+                color=ft.Colors.with_opacity(0.25, ft.Colors.BLACK),
+                offset=(0, 4),
             ),
-            ft.ListTile(
-                leading=ft.Icon(ft.Icons.COPY, size=18),
-                title=ft.Text("画像をクリップボードにコピー\n(透明度なし)", size=12),
-                on_click=lambda e: (
-                    clipboard.copy_image_to_clipboard(page, current_path, False),
-                    page.overlay.remove(overlay),
-                    page.update()
-                ),
-            ),
-            ft.ListTile(
-                leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
-                title=ft.Text("フォルダをエクスプローラーで開く", size=12),
-                on_click=lambda e: (
-                    # 選択された画像をハイライトして表に表示
-                    __import__("subprocess").Popen(
-                        f'explorer /select,"{current_path}"'
+            padding=4,
+            content=ft.Column([
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.COPY_ALL, size=18),
+                    title=ft.Text("画像をクリップボードにコピー\n(透明度維持)", size=12),
+                    on_click=lambda e: (
+                        copy_image_to_clipboard(self.page, current_path, True),
+                        self.page.overlay.pop(),
+                        self.page.update()
                     ),
-                    page.overlay.remove(overlay),
-                    page.update()
                 ),
-            ),
-            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-            ft.ListTile(
-                leading=ft.Icon(ft.Icons.CLOSE, size=18),
-                title=ft.Text("キャンセル", size=12, color=ft.Colors.ERROR),
-                on_click=lambda e: (
-                    page.overlay.remove(overlay),
-                    page.update()
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.COPY, size=18),
+                    title=ft.Text("画像をクリップボードにコピー\n(透明度なし)", size=12),
+                    on_click=lambda e: (
+                        copy_image_to_clipboard(self.page, current_path, False),
+                        self.page.overlay.pop(),
+                        self.page.update()
+                    ),
                 ),
-            ),
-        ], spacing=0),
-    )
-    # ポップアップとして表示（Stackでオーバーレイ）
-    overlay = ft.Stack([
-        ft.Container(bgcolor=ft.Colors.TRANSPARENT, on_click=lambda e: (page.overlay.remove(overlay), page.update()), expand=True),
-        ft.Container(content=context_menu, top=menu_y - 100, left=menu_x - 120, animate=ft.Animation(150, "decelerate")),
-    ], expand=True)
-    page.overlay.append(overlay)
-    context_menu.open = True
-    page.update()
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
+                    title=ft.Text("フォルダをエクスプローラーで開く", size=12),
+                    on_click=lambda e: (
+                        __import__("subprocess").Popen(f'explorer /select,"{current_path}"'),
+                        self.page.overlay.pop(),
+                        self.page.update()
+                    ),
+                ),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.CLOSE, size=18),
+                    title=ft.Text("キャンセル", size=12, color=ft.Colors.ERROR),
+                    on_click=lambda e: (
+                        self.page.overlay.pop(),
+                        self.page.update()
+                    ),
+                ),
+            ], spacing=0),
+        )
+        overlay = ft.Stack([
+            ft.Container(bgcolor=ft.Colors.TRANSPARENT, on_click=lambda e: (self.page.overlay.pop(), self.page.update()), expand=True),
+            ft.Container(content=context_menu, top=menu_y - 100, left=menu_x - 120, animate=ft.Animation(150, "decelerate")),
+        ], expand=True)
+        self.page.overlay.append(overlay)
+        self.page.update()
+
+    def show_no_images(self):
+        self.image_view.visible = False
+        self.thumbnail_grid.visible = False
+        RightPanel.instance.update_no_images()
+        self.page.update()
