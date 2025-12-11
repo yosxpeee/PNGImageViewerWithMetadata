@@ -101,7 +101,7 @@ async def show_thumbnails_async(
         except Exception as e:
             print(f"サムネイル生成失敗 {png_path}: {e}")
             # エラーでもグリッドには表示しない（スキップ）
-    # 読み込み完了！
+    # 読み込み完了
     loading_overlay.visible = False
     metadata_text.controls.clear()
     metadata_text.controls.extend([

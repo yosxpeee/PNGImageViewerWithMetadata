@@ -190,6 +190,21 @@ def main(page: ft.Page):
         padding=0,
         on_scroll=get_browser_scroll_offset,
     )
+    left_panel = ft.Container(
+        content=ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.EXPLORE),
+                ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
+                ft.Container(expand=True),
+                theme_switch,
+            ]),
+            current_path_text,
+            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+            dir_list,
+        ], expand=True),
+        padding=10,
+        width=340,
+    )
     # ── 中央：サムネイルグリッド、画像表示 ──
     image_view = ft.Image(
         src="",
@@ -216,34 +231,17 @@ def main(page: ft.Page):
         on_secondary_tap_down=show_image_context_menu,
         on_tap_down=return_to_grid,
     )
-    # ── 右ペイン：メタデータ ──
-    metadata_text = ft.Column([
-        ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-        ft.Text("画像を選択してください", size=18),
-        ], scroll=ft.ScrollMode.AUTO, expand=True
-    )
-
-    # ── 最終レイアウト
-    left_panel = ft.Container(
-        content=ft.Column([
-            ft.Row([
-                ft.Icon(ft.Icons.EXPLORE),
-                ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
-                ft.Container(expand=True),
-                theme_switch,
-            ]),
-            current_path_text,
-            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-            dir_list,
-        ], expand=True),
-        padding=10,
-        width=340,
-    )
     center_panel = ft.Container(
         content=center_container,
         alignment=ft.alignment.center,
         expand=2,
         bgcolor=theme_colors["bg_main"],
+    )
+    # ── 右ペイン：メタデータ ──
+    metadata_text = ft.Column([
+        ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+        ft.Text("画像を選択してください", size=18),
+        ], scroll=ft.ScrollMode.AUTO, expand=True
     )
     right_panel = ft.Container(
         content=ft.Column([
@@ -253,7 +251,7 @@ def main(page: ft.Page):
         padding=15,
         width=400,
     )
-    # ローディングオーバーレイ（最初は非表示）
+    # ── ローディングオーバーレイ（最初は非表示）──
     loading_overlay = ft.Container(
         visible=False,
         expand=True,
@@ -264,8 +262,8 @@ def main(page: ft.Page):
             ft.Text("読み込み中…", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=24),
     )
-    # page.overlay に追加（最前面に常に表示）
-    page.overlay.append(loading_overlay)
+    # 最終配置
+    page.overlay.append(loading_overlay) #オーバーレイを最前面に配置
     page.add(
         ft.Row([
             left_panel,
