@@ -3,7 +3,6 @@ import json
 
 SETTING_JSON_FILE = "viewer_settings.json"
 
-
 class SettingsManager:
     @staticmethod
     def load():

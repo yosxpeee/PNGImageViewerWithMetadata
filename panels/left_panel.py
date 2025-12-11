@@ -5,8 +5,8 @@ from pathlib import Path
 import win32api
 
 from panels.center_panel import CenterPanel
+from panels.right_panel import RightPanel
 from utils.scroll_record import record_left_scroll_position, replay_left_scroll_position
-
 
 class LeftPanel:
     instance = None
@@ -17,7 +17,7 @@ class LeftPanel:
         self.theme_manager = theme_manager
         LeftPanel.instance = self
 
-        self.current_path_text = ft.Text("", size=12, italic=False, color=theme_manager.colors["text_secondary"])
+        #self.current_path_text = ft.Text("", size=12, italic=False, color=theme_manager.colors["text_secondary"])
 
         page.current_path_text = ft.Text("", size=12, color=theme_manager.colors["text_secondary"])
         self.current_path_text = page.current_path_text
@@ -29,7 +29,7 @@ class LeftPanel:
             on_scroll=self.on_browser_scroll,
         )
 
-        theme_switch = ft.Switch(
+        self.theme_switch = ft.Switch(
             value=settings["dark_theme"],
             on_change=self.toggle_theme,
             label="ダークモード",
@@ -43,7 +43,7 @@ class LeftPanel:
                     ft.Icon(ft.Icons.EXPLORE),
                     ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
                     ft.Container(expand=True),
-                    theme_switch,
+                    self.theme_switch,
                 ]),
                 self.current_path_text,
                 ft.Divider(height=1, color=theme_manager.colors["divider"]),
@@ -55,9 +55,17 @@ class LeftPanel:
         )
 
     def toggle_theme(self, e):
-        self.settings["dark_theme"] = e.control.value
-        self.theme_manager.toggle_theme(self.page, self.settings, self, None, None, self.current_path_text, None, self.dir_list)
-        self.page.update()
+        # スイッチの値で設定を更新
+        self.settings["dark_theme"] = self.theme_switch.value
+        # 色を更新
+        self.theme_manager.update_colors()
+        # テーマを全パネルに適用！
+        self.theme_manager.apply_to_app(
+            self.page,
+            self,
+            CenterPanel.instance,
+            RightPanel.instance
+        )
 
     def on_browser_scroll(self, e):
         if e.data:
@@ -121,10 +129,10 @@ class LeftPanel:
                 content=ft.Row([
                     ft.Icon(ft.Icons.COMPUTER, size=14),
                     ft.Text("ドライブ一覧に戻る", size=14),
-                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, opacity=0.5),
                 ]),
                 height=32,
-                padding=4,
+                alignment=ft.alignment.top_center,
+                padding=ft.padding.symmetric(horizontal=1, vertical=1),
                 border_radius=8,
                 ink=True,
                 on_click=lambda _: self.navigate_to("<DRIVES>"),

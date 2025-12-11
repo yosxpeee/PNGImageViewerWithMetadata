@@ -1,6 +1,3 @@
-import json
-
-
 def record_left_scroll_position(page, current_path_text, scroll_pos):
     if scroll_pos["t"] == "end":
         tmp_info = {current_path_text.value: {"scroll_pos": scroll_pos["p"], "window_height": page.window.height}}

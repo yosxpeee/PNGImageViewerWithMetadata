@@ -13,7 +13,6 @@ from panels.right_panel import RightPanel
 from utils.settings import SettingsManager
 from utils.themes import ThemeManager
 
-
 class ImageViewerApp:
     def __init__(self):
         self.settings = SettingsManager.load()
@@ -42,7 +41,7 @@ class ImageViewerApp:
         self.left_panel = LeftPanel(page, self.settings, self.theme_manager)
 
         # テーマ適用
-        self.theme_manager.apply_theme(page, self.left_panel, self.center_panel, self.right_panel)
+        self.theme_manager.apply_to_app(page, self.left_panel, self.center_panel, self.right_panel)
 
         # ローディングオーバーレイ
         loading_overlay = ft.Container(

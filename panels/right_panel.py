@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 from utils.clipboard import copy_text_to_clipboard
-from utils.themes import ThemeColors
+#from utils.themes import ThemeColors
 
 class RightPanel:
     instance = None

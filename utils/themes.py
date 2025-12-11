@@ -1,11 +1,10 @@
 import flet as ft
 
-
 class ThemeColors:
     @staticmethod
     def light():
         return {
-            "bg_main": ft.Colors.WHITE,
+            "bg_main": ft.Colors.WHITE70,
             "bg_panel": ft.Colors.WHITE,
             "text_primary": ft.Colors.BLACK,
             "text_secondary": ft.Colors.OUTLINE,
@@ -34,31 +33,27 @@ class ThemeColors:
 class ThemeManager:
     def __init__(self, settings):
         self.settings = settings
-        self.colors = ThemeColors.dark() if settings["dark_theme"] else ThemeColors.light()
+        self.update_colors()
 
-    def toggle_theme(self):
-        self.settings["dark_theme"] = not self.settings["dark_theme"]
+    def update_colors(self):
         self.colors = ThemeColors.dark() if self.settings["dark_theme"] else ThemeColors.light()
 
-    def apply_theme(self, page, left_panel, center_panel, right_panel):
+    def apply_to_app(self, page, left_panel, center_panel, right_panel):
+        # テーマモード
         page.theme_mode = ft.ThemeMode.DARK if self.settings["dark_theme"] else ft.ThemeMode.LIGHT
+        
+        # 背景色
         page.bgcolor = self.colors["bg_main"]
-
         if center_panel:
             center_panel.container.bgcolor = self.colors["bg_main"]
         if left_panel:
             left_panel.container.bgcolor = self.colors["bg_panel"]
-            left_panel.container.border = ft.border.all(1, self.colors["divider"])
         if right_panel:
             right_panel.container.bgcolor = self.colors["bg_panel"]
-            right_panel.container.border = ft.border.all(1, self.colors["divider"])
 
-        # テキスト色適用など（再帰関数で）
-        self._apply_colors_to_controls(page.controls, self.colors)
+        # 現在パスの色
+        if hasattr(page, "current_path_text"):
+            page.current_path_text.color = self.colors["text_secondary"]
 
-    def _apply_colors_to_controls(self, controls, colors):
-        for control in controls:
-            if isinstance(control, ft.Text):
-                control.color = colors["text_primary"] if control.weight == ft.FontWeight.BOLD else colors["text_secondary"]
-            if hasattr(control, "controls"):
-                self._apply_colors_to_controls(control.controls, colors)
+        # 一気に更新！
+        page.update()
