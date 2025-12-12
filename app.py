@@ -101,6 +101,7 @@ class ImageViewerApp:
             bgcolor=ft.Colors.with_opacity(0.88, ft.Colors.BLACK),
             alignment=ft.alignment.center,
             content=ft.Column([
+                ft.Text("", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE), #位置調整用
                 ft.ProgressRing(width=60, height=60, stroke_width=7, color=ft.Colors.CYAN_400),
                 ft.Text("読み込み中…", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=24),

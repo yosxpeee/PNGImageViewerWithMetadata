@@ -128,7 +128,7 @@ class CenterPanel:
 
                 if i % 10 == 0 or i == len(png_files) - 1:
                     percent = int((i + 1) / len(png_files) * 100)
-                    loading_overlay.content.controls[1].value = f"読み込み中… {i+1}/{len(png_files)} ({percent}%)"
+                    loading_overlay.content.controls[2].value = f"読み込み中… {i+1}/{len(png_files)} ({percent}%)"
                     self.page.update()
                     await asyncio.sleep(0.01)
             except Exception as e:
