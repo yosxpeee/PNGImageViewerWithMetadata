@@ -40,7 +40,7 @@ class LeftPanel:
                     self.theme_switch,
                 ]),
                 self.current_path_text,
-                ft.Divider(height=1, color=theme_manager.colors["divider"]),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 self.dir_list,
             ], expand=True),
             padding=10,
@@ -135,7 +135,7 @@ class LeftPanel:
                 )
             )
             self.dir_list.controls.append(back)
-            self.dir_list.controls.append(ft.Divider(height=1, color=theme_colors["divider"]))
+            self.dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
             # 親フォルダ
             if p.parent != p:
                 self.dir_list.controls.append(self.make_list_item(

@@ -1,15 +1,38 @@
 import flet as ft
 
 class CustomAppBar:
-    def __init__(self, page: ft.Page, settings: dict, theme_manager):
+    # 初期化
+    def __init__(self, page: ft.Page):
         self.page = page
-        self.settings = settings
-        self.theme_manager = theme_manager
         # ボタン本体を保持（最大化アイコンの切り替えに必要）
         self.minimize_button = None
         self.maximize_button = None
         self.close_button = None
         self.container = self._build()
+     # イベント：最小化
+    def _minimize(self, e):
+        self.page.window.minimized = True
+        self.page.update()
+    # イベント：最大化/復元
+    def _toggle_maximize(self, e):
+        self.page.window.maximized = not self.page.window.maximized
+        self.page.update()
+
+        # アイコンとツールチップを切り替え
+        if self.page.window.maximized:
+            self.maximize_button.icon = ft.Icons.FULLSCREEN_EXIT
+            self.maximize_button.tooltip = "元に戻す"
+        else:
+            self.maximize_button.icon = ft.Icons.FULLSCREEN
+            self.maximize_button.tooltip = "最大化"
+        self.maximize_button.update()
+    # 閉じる
+    def _close(self, e):
+        # 設定保存はメイン側でやってるので、ここでは単に閉じるだけ
+        self.page.window.close()
+    ####################
+    # パーツの構築
+    ####################
     def _build(self) -> ft.Row:
         # アプリアイコン
         app_icon = ft.Container(
@@ -68,26 +91,20 @@ class CustomAppBar:
             controls=[
                 ft.WindowDragArea(
                     ft.Container(
-                        content=ft.Row(
-                            [
-                                app_icon,
-                                ft.Container(
-                                    content=ft.Text(
-                                        "PNG Image Viewer with Metadata",
-                                        size=18,
-                                        color=ft.Colors.WHITE,
-                                        weight=ft.FontWeight.W_500,
-                                    ),
-                                    padding=7,
-                                    expand=True,
+                        content=ft.Row([
+                            app_icon,
+                            ft.Container(
+                                content=ft.Text(
+                                    "PNG Image Viewer with Metadata",
+                                    size=18,
+                                    color=ft.Colors.WHITE,
+                                    weight=ft.FontWeight.W_500,
                                 ),
-                            ],
-                            spacing=0,
-                            alignment=ft.MainAxisAlignment.START,
+                                padding=7, expand=True,
+                            )],
+                            spacing=0, alignment=ft.MainAxisAlignment.START,
                         ),
-                        bgcolor=ft.Colors.BLUE,
-                        height=40,
-                        expand=True,
+                        bgcolor=ft.Colors.BLUE, height=40, expand=True,
                     ),
                     expand=True,
                 ),
@@ -98,28 +115,3 @@ class CustomAppBar:
             spacing=0,
             alignment=ft.MainAxisAlignment.END,
         )
-    def _minimize(self, e):
-        self.page.window.minimized = True
-        self.page.update()
-    def _toggle_maximize(self, e):
-        self.page.window.maximized = not self.page.window.maximized
-        self.page.update()
-
-        # アイコンとツールチップを切り替え
-        if self.page.window.maximized:
-            self.maximize_button.icon = ft.Icons.FULLSCREEN_EXIT
-            self.maximize_button.tooltip = "元に戻す"
-        else:
-            self.maximize_button.icon = ft.Icons.FULLSCREEN
-            self.maximize_button.tooltip = "最大化"
-        self.maximize_button.update()
-    def _close(self, e):
-        # 設定保存はメイン側でやってるので、ここでは単に閉じるだけ
-        self.page.window.close()
-    def _on_hover_close(self, e: ft.HoverEvent):
-        # ホバーで閉じるボタンを真っ赤に
-        if e.data == "true":
-            e.control.bgcolor = ft.Colors.RED
-        else:
-            e.control.bgcolor = ft.Colors.with_opacity(0.9, ft.Colors.RED)
-        e.control.update()

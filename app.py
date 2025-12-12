@@ -89,8 +89,8 @@ class ImageViewerApp:
         page.current_image_path = None
         page.scroll_position_history_left = []
         page.scroll_position_history_center = []
-        # パネル初期化
-        self.appbar       = CustomAppBar(page, self.settings, self.theme_manager)
+        # アプリケーションバーやパネルの初期化
+        self.appbar       = CustomAppBar(page)
         self.center_panel = CenterPanel(page, self.settings, self.theme_manager)
         self.right_panel  = RightPanel(page, self.settings, self.theme_manager)
         self.left_panel   = LeftPanel(page, self.settings, self.theme_manager)
@@ -106,73 +106,6 @@ class ImageViewerApp:
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=24),
         )
         page.overlay.append(loading_overlay)
-        # カスタムアプリケーションバー
-        app_icon = ft.Container(
-            content=ft.Icon(ft.Icons.IMAGE_OUTLINED, color=ft.Colors.WHITE),
-            width=40, height=40,
-            alignment=ft.alignment.center,
-            border_radius=ft.border_radius.all(0),
-            ink=True, bgcolor=ft.Colors.BLUE,
-        )
-        minimize_button = ft.Container(
-            content=ft.IconButton(
-                icon=ft.Icons.MINIMIZE,
-                bgcolor=ft.Colors.BLUE,
-                icon_color=ft.Colors.WHITE,
-                tooltip="最小化",
-                padding=ft.padding.all(0),
-                on_click=lambda _: self.minimize(page),
-            ),
-            width=40, height=40,
-            alignment=ft.alignment.center,
-            border_radius=ft.border_radius.all(0),
-            ink=True, bgcolor=ft.Colors.BLUE,
-        )
-        maxmize_button = ft.Container(
-            content=ft.IconButton(
-                icon=ft.Icons.FULLSCREEN,
-                bgcolor=ft.Colors.BLUE,
-                icon_color=ft.Colors.WHITE,
-                tooltip="最大化",
-                padding=ft.padding.all(0),
-                on_click=lambda _: self.toggle_maximize(page, maxmize_button.content),
-            ),
-            width=40, height=40,
-            alignment=ft.alignment.center,
-            border_radius=ft.border_radius.all(0),
-            ink=True, bgcolor=ft.Colors.BLUE,
-        )
-        close_button = ft.Container(
-            content=ft.IconButton(
-                icon=ft.Icons.CLOSE,
-                bgcolor=ft.Colors.BLUE,
-                icon_color=ft.Colors.WHITE,
-                tooltip="閉じる",
-                padding=ft.padding.all(0),
-                on_click=lambda _: self.toggle_maximize(page, page.window.close()),
-            ),
-            width=40, height=40,
-            alignment=ft.alignment.center,
-            border_radius=ft.border_radius.all(0),
-            ink=True, bgcolor=ft.Colors.BLUE,
-        )
-        custom_appbar = ft.Row([
-            ft.WindowDragArea(
-                ft.Row([
-                    app_icon,
-                    ft.Container(
-                        ft.Text("PNG Image Viewer with Metadata", size=18,color=ft.Colors.WHITE),
-                        bgcolor=ft.Colors.BLUE,
-                        padding=7,
-                        expand=True,
-                    ),
-                ], expand=True, spacing=0),
-                expand=True,
-            ),
-            minimize_button,
-            maxmize_button,
-            close_button,
-        ],spacing=0)
         # テーマ適用
         self.theme_manager.apply_to_app(page, self.left_panel, self.center_panel, self.right_panel)
         # 最終配置
