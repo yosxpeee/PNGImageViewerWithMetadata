@@ -1,3 +1,8 @@
+########################################
+# PNG Image Viewer with Metadata
+#
+# Programming assisted by Grok 4.1 Beta
+########################################
 import flet as ft
 from app import ImageViewerApp
 

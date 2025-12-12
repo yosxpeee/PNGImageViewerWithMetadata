@@ -17,7 +17,6 @@ class CustomAppBar:
     def _toggle_maximize(self, e):
         self.page.window.maximized = not self.page.window.maximized
         self.page.update()
-
         # アイコンとツールチップを切り替え
         if self.page.window.maximized:
             self.maximize_button.icon = ft.Icons.FULLSCREEN_EXIT
