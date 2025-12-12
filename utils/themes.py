@@ -14,7 +14,6 @@ class ThemeColors:
             "surface": ft.Colors.SURFACE,
             "meta_secondary_title": ft.Colors.TEAL_900,
         }
-
     @staticmethod
     def dark():
         return {
@@ -29,19 +28,22 @@ class ThemeColors:
             "meta_secondary_title": ft.Colors.TEAL_ACCENT_400,
         }
 
-
 class ThemeManager:
+    # 初期化
     def __init__(self, settings):
         self.settings = settings
         self.update_colors()
-
+    ####################
+    # カラーテーマ設定の更新
+    ####################
     def update_colors(self):
         self.colors = ThemeColors.dark() if self.settings["dark_theme"] else ThemeColors.light()
-
+    ####################
+    # アプリケーションにテーマを反映させる
+    ####################
     def apply_to_app(self, page, left_panel, center_panel, right_panel):
         # テーマモード
         page.theme_mode = ft.ThemeMode.DARK if self.settings["dark_theme"] else ft.ThemeMode.LIGHT
-        
         # 背景色
         page.bgcolor = self.colors["bg_main"]
         if center_panel:
@@ -50,7 +52,6 @@ class ThemeManager:
             left_panel.container.bgcolor = self.colors["bg_panel"]
         if right_panel:
             right_panel.container.bgcolor = self.colors["bg_panel"]
-
         # 現在パスの色
         if hasattr(page, "current_path_text"):
             page.current_path_text.color = self.colors["text_secondary"]
@@ -60,5 +61,5 @@ class ThemeManager:
                 if isinstance(ctrl, ft.Text) and ctrl.value in ["PNG メタデータ", "ファイル情報"]:
                     ctrl.color = self.colors["meta_secondary_title"]
                     ctrl.update()
-        # 一気に更新！
+        # ページ全体のアップデート
         page.update()

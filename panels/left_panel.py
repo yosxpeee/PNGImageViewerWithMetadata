@@ -10,25 +10,20 @@ from utils.scroll_record import record_left_scroll_position, replay_left_scroll_
 
 class LeftPanel:
     instance = None
-
+    # 初期化
     def __init__(self, page, settings, theme_manager):
         self.page = page
         self.settings = settings
         self.theme_manager = theme_manager
         LeftPanel.instance = self
-
-        #self.current_path_text = ft.Text("", size=12, italic=False, color=theme_manager.colors["text_secondary"])
-
         page.current_path_text = ft.Text("", size=12, color=theme_manager.colors["text_secondary"])
         self.current_path_text = page.current_path_text
-        
         self.dir_list = ft.ListView(
             expand=True,
             spacing=0,
             padding=0,
             on_scroll=self.on_browser_scroll,
         )
-
         self.theme_switch = ft.Switch(
             value=settings["dark_theme"],
             on_change=self.toggle_theme,
@@ -36,7 +31,6 @@ class LeftPanel:
             label_position=ft.LabelPosition.LEFT,
             height=36,
         )
-
         self.container = ft.Container(
             content=ft.Column([
                 ft.Row([
@@ -53,38 +47,41 @@ class LeftPanel:
             width=340,
             bgcolor=theme_manager.colors["bg_panel"],
         )
-
+    # イベント：トグルスイッチによるテーマ切り替え
     def toggle_theme(self, e):
         # スイッチの値で設定を更新
         self.settings["dark_theme"] = self.theme_switch.value
         # 色を更新
         self.theme_manager.update_colors()
-        # テーマを全パネルに適用！
+        # テーマを全パネルに適用
         self.theme_manager.apply_to_app(
             self.page,
             self,
             CenterPanel.instance,
             RightPanel.instance
         )
-
+    # イベント：ファイルブラウザのスクロール
     def on_browser_scroll(self, e):
         if e.data:
             import json
             scroll_pos = json.loads(e.data)
             record_left_scroll_position(self.page, self.current_path_text, scroll_pos)
-
+    ####################
+    # ナビゲート処理
+    ####################
     def navigate_to(self, path: str):
         if self.page.history_index + 1 < len(self.page.navigation_history):
             self.page.navigation_history = self.page.navigation_history[:self.page.history_index + 1]
         self.page.navigation_history.append(path)
         self.page.history_index += 1
         self.refresh_directory(path)
-
+    ####################
+    # ディレクトリの表示更新
+    ####################
     def refresh_directory(self, path: str):
         self.dir_list.controls.clear()
         self.page.current_image_path = None
         theme_colors = self.theme_manager.colors
-
         # ── ドライブ一覧の特別処理 ──
         if path == "<DRIVES>":
             self.current_path_text.value = "ドライブを選択してください"
@@ -104,16 +101,13 @@ class LeftPanel:
                     except:
                         # アクセスできないドライブ（CD-ROM空など）は無視
                         pass
-
             # ドライブ一覧ではサムネイル非表示
             if CenterPanel.instance:
                 CenterPanel.instance.show_no_images()
-
         # ── 通常のフォルダ処理 ──
         else:
             p = Path(path)
             self.current_path_text.value = f"現在: {path}"
-
             # サムネイル読み込み判定
             try:
                 has_png = any(item.suffix.lower() == ".png" for item in p.iterdir())
@@ -123,7 +117,6 @@ class LeftPanel:
                     CenterPanel.instance.show_no_images()
             except PermissionError:
                 CenterPanel.instance.show_no_images()
-
             # 「ドライブ一覧に戻る」ボタン
             back = ft.Container(
                 content=ft.Row([
@@ -143,7 +136,6 @@ class LeftPanel:
             )
             self.dir_list.controls.append(back)
             self.dir_list.controls.append(ft.Divider(height=1, color=theme_colors["divider"]))
-
             # 親フォルダ
             if p.parent != p:
                 self.dir_list.controls.append(self.make_list_item(
@@ -153,7 +145,6 @@ class LeftPanel:
                     is_folder=True,
                     theme_colors=theme_colors
                 ))
-
             # ファイル・フォルダ一覧
             try:
                 items = sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
@@ -175,26 +166,26 @@ class LeftPanel:
                         ))
             except PermissionError:
                 self.dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
-
         # スクロール位置復元（共通）
         replay_left_scroll_position(self.page, self.current_path_text, self.dir_list)
         self.page.update()
-
+    ####################
+    # リスト表示部分の生成
+    ####################
     def make_list_item(self, name: str, icon, path: str, is_folder=False, theme_colors=None):
         if theme_colors is None:
             theme_colors = self.theme_manager.colors
-
+        # イベント：クリック
         def on_click_handler(e):
             if is_folder:
                 self.navigate_to(path)
             else:
                 CenterPanel.instance.select_image(path)
-
+        # イベント：ホバーエフェクト
         def mli_hover(e):
             container.bgcolor = theme_colors["hover"] if e.data == "true" else None
             container.update()
-        
-        #container.on_hover = mli_hover
+
         container = ft.Container(
             content=ft.Row([
                 ft.Icon(icon, size=14),
@@ -209,13 +200,17 @@ class LeftPanel:
         )
         container.on_hover = mli_hover
         return container
-
+    ####################
+    # マウスの戻るボタン処理
+    ####################
     async def go_back(self):
         if self.page.history_index > 0:
             self.page.history_index -= 1
             self.refresh_directory(self.page.navigation_history[self.page.history_index])
         self.page.update()
-
+    ####################
+    # マウスの進むボタン処理
+    ####################
     async def go_forward(self):
         if self.page.history_index + 1 < len(self.page.navigation_history):
             self.page.history_index += 1

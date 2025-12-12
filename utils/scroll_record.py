@@ -1,3 +1,6 @@
+####################
+# スクロール履歴記録（ファイルブラウザ）
+####################
 def record_left_scroll_position(page, current_path_text, scroll_pos):
     if scroll_pos["t"] == "end":
         tmp_info = {current_path_text.value: {"scroll_pos": scroll_pos["p"], "window_height": page.window.height}}
@@ -12,8 +15,9 @@ def record_left_scroll_position(page, current_path_text, scroll_pos):
                 break
         if not overwritten and scroll_pos["p"] > 0:
             page.scroll_position_history_left.append(tmp_info)
-
-
+####################
+# スクロール履歴記録（サムネイルグリッド）
+####################
 def record_center_scroll_position(page, current_path_text, scroll_pos):
     if scroll_pos["t"] == "end":
         tmp_info = {current_path_text.value: {"scroll_pos": scroll_pos["p"], "window_height": page.window.height}}
@@ -28,8 +32,9 @@ def record_center_scroll_position(page, current_path_text, scroll_pos):
                 break
         if not overwritten and scroll_pos["p"] > 0:
             page.scroll_position_history_center.append(tmp_info)
-
-
+####################
+# スクロール復元（ファイルブラウザ）
+####################
 def replay_left_scroll_position(page, current_path_text, dir_list):
     for index, item in enumerate(page.scroll_position_history_left):
         if current_path_text.value in item:
@@ -39,8 +44,9 @@ def replay_left_scroll_position(page, current_path_text, dir_list):
                 page.update()
             else:
                 page.scroll_position_history_left.pop(index)
-
-
+####################
+# スクロール復元（サムネイルグリッド）
+####################
 def replay_center_scroll_position(page, current_path_text, thumbnail_grid):
     for index, item in enumerate(page.scroll_position_history_center):
         if current_path_text.value in item:

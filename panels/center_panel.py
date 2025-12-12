@@ -12,13 +12,12 @@ from utils.clipboard import copy_image_to_clipboard
 
 class CenterPanel:
     instance = None
-
+    # 初期化
     def __init__(self, page, settings, theme_manager):
         self.page = page
         self.settings = settings
         self.theme_manager = theme_manager
         CenterPanel.instance = self
-
         self.image_view = ft.Image(
             src="",
             fit=ft.ImageFit.CONTAIN,
@@ -49,19 +48,43 @@ class CenterPanel:
             expand=2,
             bgcolor=theme_manager.colors["bg_main"],
         )
-
+    # イベント：サムネイルグリッドのスクロール
     def on_grid_scroll(self, e):
         if e.data:
             import json
             scroll_pos = json.loads(e.data)
             record_center_scroll_position(self.page, self.page.current_path_text, scroll_pos)
-
+    # イベント：グリッド表示に戻る
+    def return_to_grid(self, e):
+        if self.image_view.visible:
+            self.thumbnail_grid.visible = True
+            self.image_view.visible = False
+            self.page.current_image_path = None
+            for container in self.thumbnail_grid.controls:
+                if hasattr(container, "animate_scale") and container.scale != 1.0:
+                    container.scale = 1.0
+                    container.update()
+            RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), self.page.current_path_text.value)
+            self.page.update()
+            replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
+    # イベント：右クリックメニュー表示
+    def show_image_context_menu(self, e: ft.TapDownEvent):
+        if self.thumbnail_grid.visible or not self.image_view.visible:
+            return
+        current_path = self.page.current_image_path
+        if not current_path or not os.path.exists(current_path):
+            return
+        menu_x = e.global_x
+        menu_y = e.global_y
+        self.create_image_context_menu(menu_x, menu_y, current_path)
+    ####################
+    # サムネイルグリッド表示
+    ####################
     async def show_thumbnails_async(self, folder_path: str):
         loading_overlay = self.page.overlay[0]
         loading_overlay.visible = True
         loading_overlay.content.controls[1].value = "読み込み中…"
         self.page.update()
-
         self.thumbnail_grid.controls.clear()
         try:
             png_files = [p for p in Path(folder_path).iterdir() if p.suffix.lower() == ".png"]
@@ -71,12 +94,10 @@ class CenterPanel:
             RightPanel.instance.update_no_selection()
             self.page.update()
             return
-
         if not png_files:
             loading_overlay.visible = False
             self.show_no_images()
             return
-
         self.image_view.visible = False
         self.thumbnail_grid.visible = True
         for i, png_path in enumerate(png_files):
@@ -112,12 +133,13 @@ class CenterPanel:
                     await asyncio.sleep(0.01)
             except Exception as e:
                 print(f"サムネイル生成失敗 {png_path}: {e}")
-
         loading_overlay.visible = False
         RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), folder_path)
         self.page.update()
         replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
-
+    ####################
+    # 画像を選択する
+    ####################
     def select_image(self, path: str):
         self.page.current_image_path = path
         self.image_view.src = path
@@ -125,30 +147,9 @@ class CenterPanel:
         self.thumbnail_grid.visible = False
         RightPanel.instance.update_metadata(path)
         self.page.update()
-
-    def return_to_grid(self, e):
-        if self.image_view.visible:
-            self.thumbnail_grid.visible = True
-            self.image_view.visible = False
-            self.page.current_image_path = None
-            for container in self.thumbnail_grid.controls:
-                if hasattr(container, "animate_scale") and container.scale != 1.0:
-                    container.scale = 1.0
-                    container.update()
-            RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), self.page.current_path_text.value)
-            self.page.update()
-            replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
-
-    def show_image_context_menu(self, e: ft.TapDownEvent):
-        if self.thumbnail_grid.visible or not self.image_view.visible:
-            return
-        current_path = self.page.current_image_path
-        if not current_path or not os.path.exists(current_path):
-            return
-        menu_x = e.global_x
-        menu_y = e.global_y
-        self.create_image_context_menu(menu_x, menu_y, current_path)
-
+    ####################
+    # 右クリックメニューの作成
+    ####################
     def create_image_context_menu(self, menu_x, menu_y, current_path):
         context_menu = ft.Container(
             width=240,
@@ -205,7 +206,9 @@ class CenterPanel:
         ], expand=True)
         self.page.overlay.append(overlay)
         self.page.update()
-
+    ####################
+    # 画像を非表示にする
+    ####################
     def show_no_images(self):
         self.image_view.visible = False
         self.thumbnail_grid.visible = False

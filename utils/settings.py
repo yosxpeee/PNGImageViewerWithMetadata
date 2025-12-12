@@ -13,7 +13,6 @@ class SettingsManager:
         if "dark_theme" not in settings:
             settings["dark_theme"] = False
         return settings
-
     @staticmethod
     def save(settings):
         with open(SETTING_JSON_FILE, 'w') as f:

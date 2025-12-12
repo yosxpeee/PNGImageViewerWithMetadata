@@ -6,17 +6,15 @@ from pathlib import Path
 from datetime import datetime
 
 from utils.clipboard import copy_text_to_clipboard
-#from utils.themes import ThemeColors
 
 class RightPanel:
     instance = None
-
+    # 初期化
     def __init__(self, page, settings, theme_manager):
         self.page = page
         self.settings = settings
         self.theme_manager = theme_manager
         RightPanel.instance = self
-
         self.metadata_text = ft.Column(
             scroll=ft.ScrollMode.AUTO, expand=True
         )
@@ -29,7 +27,9 @@ class RightPanel:
             width=400,
             bgcolor=theme_manager.colors["bg_panel"],
         )
-
+    ####################
+    # 画像非選択のときの画面
+    ####################
     def update_no_selection(self):
         self.metadata_text.controls.clear()
         self.metadata_text.controls.extend([
@@ -37,7 +37,8 @@ class RightPanel:
             ft.Text("画像を選択してください", size=18),
         ])
         self.page.update()
-
+    ####################
+    # 画像が存在しないときの画面
     def update_no_images(self):
         self.metadata_text.controls.clear()
         self.metadata_text.controls.extend([
@@ -45,7 +46,9 @@ class RightPanel:
             ft.Text("このフォルダにPNG画像がありません", size=16),
         ])
         self.page.update()
-
+    ####################
+    # サムネイルグリッド表示がされているときの画面
+    ####################
     def update_thumbnail_view(self, count, path):
         self.metadata_text.controls.clear()
         self.metadata_text.controls.extend([
@@ -54,14 +57,15 @@ class RightPanel:
             ft.Text(path, size=12, color=ft.Colors.OUTLINE),
         ])
         self.page.update()
-
+    ####################
+    # メタデータ表示の更新
+    ####################
     def update_metadata(self, image_path: str):
         theme_colors = self.theme_manager.colors
         self.metadata_text.controls.clear()
         if not image_path:
             self.update_no_selection()
             return
-
         try:
             stat = os.stat(image_path)
             size_kb = stat.st_size / 1024
@@ -69,8 +73,7 @@ class RightPanel:
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
                 ft.Text("PNG メタデータ", weight=ft.FontWeight.BOLD, size=16, color=theme_colors["meta_secondary_title"]),
             ])
-
-            # tEXt / zTXt / iTXt 解析 (元のコードをほぼそのまま)
+            # tEXt / zTXt / iTXt 解析
             with open(image_path, "rb") as f:
                 reader = png.Reader(file=f)
                 for chunk_type, data in reader.chunks():
@@ -136,7 +139,6 @@ class RightPanel:
                             self.metadata_text.controls.append(ft.Text(f"{keyword}: {text}"))
                         except Exception as e:
                             self.metadata_text.controls.append(ft.Text(f"デコード失敗({e})", color=ft.Colors.RED))
-
             # ファイル情報
             self.metadata_text.controls.extend([
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
@@ -157,11 +159,15 @@ class RightPanel:
         except Exception as e:
             self.metadata_text.controls.append(ft.Text(f"エラー: {e}", color="red"))
         self.page.update()
-
+    ####################
+    # 水平線とテキストの追加
+    ####################
     def add_divider_and_text(self, text, weight_bold=False):
         self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
         self.metadata_text.controls.append(ft.Text(text, weight=ft.FontWeight.BOLD if weight_bold else ft.FontWeight.NORMAL))
-
+    ####################
+    # ポジティブプロンプトの表示部分
+    ####################
     def add_prompt_section(self, prompt_text):
         row = ft.Row([
             ft.Text("プロンプト", weight=ft.FontWeight.BOLD, size=14),
@@ -175,7 +181,9 @@ class RightPanel:
         ])
         self.metadata_text.controls.append(ft.Container(content=row, padding=ft.padding.only(top=0, bottom=0)))
         self.metadata_text.controls.append(ft.Text(prompt_text, size=13))
-
+    ####################
+    # ネガティブプロンプトの表示部分
+    ####################
     def add_negative_section(self, negative_text):
         row = ft.Row([
             ft.Text("ネガティブプロンプト", weight=ft.FontWeight.BOLD, size=14),
@@ -189,7 +197,9 @@ class RightPanel:
         ])
         self.metadata_text.controls.append(ft.Container(content=row, padding=ft.padding.only(top=0, bottom=0)))
         self.metadata_text.controls.append(ft.Text(negative_text, size=13))
-
+    ####################
+    # その他情報の表示部分
+    ####################
     def add_other_section(self, other_info):
         row = ft.Row([
             ft.Text("その他情報", weight=ft.FontWeight.BOLD, size=14),

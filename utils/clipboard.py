@@ -7,7 +7,9 @@ import win32clipboard
 
 BITMAPV5HEADER_SIZE = 124
 
-
+####################
+# テキストをクリップボードにコピー
+####################
 def copy_text_to_clipboard(page: ft.Page, text: str, name: str = "テキスト"):
     page.set_clipboard(text)
     snack = ft.SnackBar(
@@ -18,8 +20,9 @@ def copy_text_to_clipboard(page: ft.Page, text: str, name: str = "テキスト")
     page.overlay.append(snack)
     snack.open = True
     page.update()
-
-
+####################
+# 画像をクリップボードにコピー
+####################
 def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
     try:
         img = Image.open(image_path)
@@ -57,7 +60,6 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
             done_msg = "(透明度なし)"
             output.close()
-
         # PNGも登録
         buf = io.BytesIO()
         img.save(buf, format="PNG")
@@ -65,7 +67,6 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
         if png_format:
             win32clipboard.SetClipboardData(png_format, buf.getvalue())
         win32clipboard.CloseClipboard()
-
         snack = ft.SnackBar(
             content=ft.Text("画像をクリップボードにコピーしました！" + done_msg, color=ft.Colors.WHITE),
             bgcolor=ft.Colors.GREEN_700,
