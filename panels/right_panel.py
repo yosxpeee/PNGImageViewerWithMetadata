@@ -170,7 +170,12 @@ class RightPanel:
     ####################
     def add_prompt_section(self, prompt_text):
         row = ft.Row([
-            ft.Text("プロンプト", weight=ft.FontWeight.BOLD, size=14),
+            ft.Text(
+                spans=[
+                    ft.TextSpan("プロンプト", ft.TextStyle(decoration=ft.TextDecoration.UNDERLINE))
+                ],
+                weight=ft.FontWeight.BOLD, size=14
+            ),
             ft.Container(expand=True),
             ft.IconButton(
                 icon=ft.Icons.COPY,
@@ -186,7 +191,12 @@ class RightPanel:
     ####################
     def add_negative_section(self, negative_text):
         row = ft.Row([
-            ft.Text("ネガティブプロンプト", weight=ft.FontWeight.BOLD, size=14),
+            ft.Text(
+                spans=[
+                    ft.TextSpan("ネガティブプロンプト", ft.TextStyle(decoration=ft.TextDecoration.UNDERLINE))
+                ],
+                weight=ft.FontWeight.BOLD, size=14
+            ),
             ft.Container(expand=True),
             ft.IconButton(
                 icon=ft.Icons.COPY,
@@ -202,7 +212,12 @@ class RightPanel:
     ####################
     def add_other_section(self, other_info):
         row = ft.Row([
-            ft.Text("その他情報", weight=ft.FontWeight.BOLD, size=14),
+            ft.Text(
+                spans=[
+                    ft.TextSpan("その他情報", ft.TextStyle(decoration=ft.TextDecoration.UNDERLINE))
+                ],
+                weight=ft.FontWeight.BOLD, size=14
+            ),
             ft.Container(expand=True),
             ft.IconButton(
                 icon=ft.Icons.COPY,
