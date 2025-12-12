@@ -9,6 +9,7 @@ import warnings
 from panels.left_panel import LeftPanel
 from panels.center_panel import CenterPanel
 from panels.right_panel import RightPanel
+from panels.appbar import CustomAppBar
 from utils.settings import SettingsManager
 from utils.themes import ThemeManager
 
@@ -89,9 +90,10 @@ class ImageViewerApp:
         page.scroll_position_history_left = []
         page.scroll_position_history_center = []
         # パネル初期化
+        self.appbar       = CustomAppBar(page, self.settings, self.theme_manager)
         self.center_panel = CenterPanel(page, self.settings, self.theme_manager)
-        self.right_panel = RightPanel(page, self.settings, self.theme_manager)
-        self.left_panel = LeftPanel(page, self.settings, self.theme_manager)
+        self.right_panel  = RightPanel(page, self.settings, self.theme_manager)
+        self.left_panel   = LeftPanel(page, self.settings, self.theme_manager)
         # ローディングオーバーレイ
         loading_overlay = ft.Container(
             visible=False,
@@ -176,7 +178,7 @@ class ImageViewerApp:
         # 最終配置
         page.add(
             ft.Column([
-                custom_appbar,
+                self.appbar.container,
                 ft.Row([
                     self.left_panel.container,
                     self.center_panel.container,
