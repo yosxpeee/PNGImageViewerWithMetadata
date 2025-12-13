@@ -12,6 +12,8 @@ class SettingsManager:
                 settings = json.load(f)
         if "dark_theme" not in settings:
             settings["dark_theme"] = False
+        if "last_dir" not in settings:
+            settings["last_dir"] = "<DRIVES>"
         return settings
     @staticmethod
     def save(settings):

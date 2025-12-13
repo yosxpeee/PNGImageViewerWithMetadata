@@ -168,6 +168,7 @@ class LeftPanel:
                 self.dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
         # スクロール位置復元（共通）
         replay_left_scroll_position(self.page, self.current_path_text, self.dir_list)
+        self.settings["last_dir"] = path
         self.page.update()
     ####################
     # リスト表示部分の生成
