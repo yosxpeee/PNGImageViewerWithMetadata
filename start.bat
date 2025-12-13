@@ -5,8 +5,8 @@ if not exist venv (
     powershell venv\Scripts\activate.ps1
     pip install -r requirements.txt
     python -m pip install --upgrade pip
-    python image_viewer.py
+    python main.py
 ) else (
     powershell venv\Scripts\activate.ps1
-    python image_viewer.py
+    python main.py
 )
