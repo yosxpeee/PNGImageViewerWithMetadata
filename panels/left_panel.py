@@ -18,12 +18,30 @@ class LeftPanel:
         LeftPanel.instance = self
         page.current_path_text = ft.Text("", size=12, color=theme_manager.colors["text_secondary"])
         self.current_path_text = page.current_path_text
-        self.dir_list = ft.ListView(
-            expand=True,
-            spacing=0,
-            padding=0,
-            on_scroll=self.on_browser_scroll,
+
+        self.search_folder_text = ft.Text("検索フォルダ: 未選択", size=12, width=270)
+        self.search_folder_path = None  # 実際に選んだパス
+
+        self.navi_rail = ft.NavigationRail(
+            selected_index=0,
+            min_width=60,
+            width=60,
+            group_alignment=-0.9,
+            destinations=[
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.REMOVE_RED_EYE_OUTLINED,
+                    selected_icon=ft.Icons.REMOVE_RED_EYE,
+                    label="閲覧",
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.SEARCH_OUTLINED,
+                    selected_icon=ft.Icons.SEARCH,
+                    label="検索",
+                ),
+            ],
+            on_change=self.switch_right_item,
         )
+        # どちらにも置くアイテム
         self.theme_switch = ft.Switch(
             value=settings["dark_theme"],
             on_change=self.toggle_theme,
@@ -31,22 +49,86 @@ class LeftPanel:
             label_position=ft.LabelPosition.LEFT,
             height=36,
         )
+        # 検索用アイテム
+        self.pick_folder_button = ft.ElevatedButton(
+            "検索フォルダを選択",
+            icon=ft.Icons.FOLDER_OPEN,
+            on_click=self.pick_folder,
+        )
+        self.search_target_filename = ft.TextField(
+            label="ファイル名に含む文字列",
+            hint_text="例: 20251012",
+            width=270,
+            height=36,
+            border_color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE),
+        )
+        self.search_target_itxt = ft.TextField(
+            label="メタデータ(iTXt)に含む文字列",
+            hint_text="例: long hair",
+            width=270,
+            height=36,
+            border_color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE),
+        )
+        self.search_button = ft.ElevatedButton(
+            "検索実行",
+            icon=ft.Icons.SEARCH,
+            on_click=lambda e: self.page.run_task(self.perform_search),
+            disabled=True,  # フォルダ未選択時は無効
+        )
+        self.search = ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.SEARCH),
+                ft.Text("ファイル検索", weight=ft.FontWeight.BOLD),
+                ft.Container(expand=True),
+                self.theme_switch,
+            ]),
+            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+            self.pick_folder_button,
+            self.search_folder_text,
+            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+            self.search_target_filename,
+            self.search_target_itxt,
+            self.search_button,
+        ], expand=True)
+        self.folder_picker = ft.FilePicker(on_result=self.on_folder_picked)
+        page.overlay.append(self.folder_picker)
+
+        # 閲覧用アイテム
+        self.dir_list = ft.ListView(
+            expand=True,
+            spacing=0,
+            padding=0,
+            on_scroll=self.on_browser_scroll,
+        )
+        self.browser = ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.SPACE_DASHBOARD),
+                ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
+                ft.Container(expand=True),
+                self.theme_switch,
+            ]),
+            self.current_path_text,
+            self.dir_list,
+        ], expand=True)
+
         self.container = ft.Container(
-            content=ft.Column([
-                ft.Row([
-                    ft.Icon(ft.Icons.EXPLORE),
-                    ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
-                    ft.Container(expand=True),
-                    self.theme_switch,
-                ]),
-                self.current_path_text,
-                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                self.dir_list,
-            ], expand=True),
+            content= ft.Row([
+                self.navi_rail,
+                self.browser, #初期状態は閲覧モード固定
+            ]),
             padding=10,
-            width=340,
+            width=360,
             bgcolor=theme_manager.colors["bg_panel"],
         )
+    # イベント：右アイテムの切り替え
+    def switch_right_item(self, e):
+        print("Selected destination:", e.control.selected_index)
+        if e.control.selected_index == 0:
+            right_item = self.browser
+        else:
+            right_item = self.search
+        self.container.content.controls[1] = right_item
+        self.page.update()
     # イベント：トグルスイッチによるテーマ切り替え
     def toggle_theme(self, e):
         # スイッチの値で設定を更新
@@ -60,6 +142,19 @@ class LeftPanel:
             CenterPanel.instance,
             RightPanel.instance
         )
+    # イベント：ファイルピッカー
+    def pick_folder(self, e):
+        self.folder_picker.get_directory_path(dialog_title="検索対象のフォルダを選択")
+    def on_folder_picked(self, e: ft.FilePickerResultEvent):
+        if e.path:
+            self.search_folder_path = e.path
+            self.search_folder_text.value = f"検索フォルダ: {e.path}"
+            self.search_button.disabled = False
+        else:
+            self.search_folder_path = None
+            self.search_folder_text.value = "検索フォルダ: 未選択"
+            self.search_button.disabled = True
+        self.page.update()
     # イベント：ファイルブラウザのスクロール
     def on_browser_scroll(self, e):
         if e.data:
@@ -118,13 +213,14 @@ class LeftPanel:
             except PermissionError:
                 CenterPanel.instance.show_no_images()
             # 「ドライブ一覧に戻る」ボタン
+            self.dir_list.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
             back = ft.Container(
                 content=ft.Row([
                     ft.Icon(ft.Icons.COMPUTER, size=14),
                     ft.Text("ドライブ一覧に戻る", size=14),
                 ]),
                 height=32,
-                alignment=ft.alignment.top_center,
+                #alignment=ft.alignment.top_center,
                 padding=ft.padding.symmetric(horizontal=1, vertical=1),
                 border_radius=8,
                 ink=True,
