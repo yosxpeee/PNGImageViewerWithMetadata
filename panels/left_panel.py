@@ -351,7 +351,7 @@ class LeftPanel:
         folder = Path(self.search_folder_path)
         if not folder.exists():
             self.page.open(ft.SnackBar(
-                content=ft.Text("フォルダが存在しません", color=ft.Colors.BLACK),
+                content=ft.Text("フォルダが存在しません", color=ft.Colors.WHITE),
                 bgcolor=ft.Colors.RED_700,
                 duration=1500,
             ))
@@ -426,7 +426,7 @@ class LeftPanel:
         else:
             CenterPanel.instance.show_no_images()
             self.page.open(ft.SnackBar(
-                content=ft.Text("該当する画像が見つかりませんでした", color=ft.Colors.BLACK),
+                content=ft.Text("該当する画像が見つかりませんでした", color=ft.Colors.WHITE),
                 bgcolor=ft.Colors.RED_700,
                 duration=1500,
             ))
