@@ -43,6 +43,7 @@ class LeftPanel:
             ],
             on_change=self.switch_right_item,
         )
+
         # 閲覧/検索のどちらにも置くアイテム
         self.theme_switch = ft.Switch(
             value=settings["dark_theme"],
@@ -101,7 +102,7 @@ class LeftPanel:
         ], expand=True)
         self.folder_picker = ft.FilePicker(on_result=self.on_folder_picked)
         self.folder_picker.name = "picker"
-        page.overlay.append(self.folder_picker) #overlay[0]
+        page.overlay.append(self.folder_picker)
         # 閲覧用アイテム
         self.dir_list = ft.ListView(
             expand=True,
@@ -132,8 +133,10 @@ class LeftPanel:
     def switch_right_item(self, e):
         if e.control.selected_index == 0:
             right_item = self.browser
+            CenterPanel.instance.switch_mode("browser")
         else:
             right_item = self.search
+            CenterPanel.instance.switch_mode("search")
         self.container.content.controls[1] = right_item
         #中央ペインはクリアして直前の処理をやり直す
         CenterPanel.instance.image_view.visible = False

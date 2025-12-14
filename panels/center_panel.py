@@ -13,10 +13,11 @@ from utils.clipboard import copy_image_to_clipboard
 class CenterPanel:
     instance = None
     # 初期化
-    def __init__(self, page, settings, theme_manager):
+    def __init__(self, page, settings, theme_manager, mode):
         self.page = page
         self.settings = settings
         self.theme_manager = theme_manager
+        self.mode = mode
         CenterPanel.instance = self
         self.image_view = ft.Image(
             src="",
@@ -54,7 +55,7 @@ class CenterPanel:
             import json
             scroll_pos = json.loads(e.data)
             record_center_scroll_position(self.page, self.page.current_path_text, scroll_pos)
-    # イベント：グリッド表示に戻る
+    # イベント：サムネイルグリッド表示に戻る
     def return_to_grid(self, e):
         if self.image_view.visible:
             self.thumbnail_grid.visible = True
@@ -64,7 +65,11 @@ class CenterPanel:
                 if hasattr(container, "animate_scale") and container.scale != 1.0:
                     container.scale = 1.0
                     container.update()
-            RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), self.page.current_path_text.value)
+            if self.mode == "browser":
+                title = "フォルダ内画像"
+            else:
+                title = "検索結果"
+            RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), title)
             replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
             self.page.update()
     # イベント：右クリックメニュー表示
@@ -77,6 +82,11 @@ class CenterPanel:
         menu_x = e.global_x
         menu_y = e.global_y
         self.create_image_context_menu(menu_x, menu_y, current_path)
+    ####################
+    # モード切替
+    ####################
+    def switch_mode(self, mode):
+        self.mode = mode
     ####################
     # サムネイルグリッド表示（閲覧モード）
     ####################
@@ -140,13 +150,13 @@ class CenterPanel:
                     duration=1500,
                 ))
         loading_overlay.visible = False
-        RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), folder_path)
+        RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), "フォルダ内画像")
         replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
         self.page.update()
     ####################
     # サムネイルグリッド表示（検索モード）
     ####################
-    async def show_thumbnails_from_list_async(self, file_paths: list[str], search_mode=False):
+    async def show_thumbnails_from_list_async(self, file_paths: list[str]):
         loading_overlay = self.page.overlay[1]
         loading_overlay.visible = True
         loading_overlay.name = "loading"
@@ -189,8 +199,7 @@ class CenterPanel:
                     duration=1500,
                 ))
         loading_overlay.visible = False
-        title = "検索結果" if search_mode else "フォルダ内画像"
-        RightPanel.instance.update_thumbnail_view(len(file_paths), title)
+        RightPanel.instance.update_thumbnail_view(len(file_paths), "検索結果")
         self.page.update()
     ####################
     # 画像を選択する

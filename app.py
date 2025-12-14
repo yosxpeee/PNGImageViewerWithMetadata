@@ -76,8 +76,7 @@ class ImageViewerApp:
         page.scroll_position_history_left = []
         page.scroll_position_history_center = []
         # アプリケーションバーやパネルの初期化
-        #self.appbar       = CustomAppBar(page)
-        self.center_panel = CenterPanel(page, self.settings, self.theme_manager)
+        self.center_panel = CenterPanel(page, self.settings, self.theme_manager, "browser")
         self.right_panel  = RightPanel(page, self.settings, self.theme_manager)
         self.left_panel   = LeftPanel(page, self.settings, self.theme_manager)
         # ローディングオーバーレイ
