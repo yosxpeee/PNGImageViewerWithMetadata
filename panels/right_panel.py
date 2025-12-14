@@ -83,7 +83,7 @@ class RightPanel:
             # tEXt / zTXt / iTXt 解析
             with open(image_path, "rb") as f:
                 reader = png.Reader(file=f)
-                for chunk_type, data in reader.chunks(): #ここは単ファイルの解析なのでこれでよい
+                for chunk_type, data in reader.chunks():
                     ctype = chunk_type.decode("latin1", errors="ignore")
                     if ctype == "tEXt":
                         text, prompt_text, negative_text, other_info = get_tEXt(data)

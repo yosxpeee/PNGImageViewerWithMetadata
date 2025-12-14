@@ -400,6 +400,8 @@ class LeftPanel:
                                     found_text = True
                                     break
                 except Exception as e:
+                    # よからぬこと（ファイルが検索中に消えたなど）があっても
+                    # そのファイルはスキップして継続
                     continue
             else:
                 found_text = True
