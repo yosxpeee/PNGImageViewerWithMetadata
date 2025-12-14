@@ -9,7 +9,6 @@ import warnings
 from panels.left_panel import LeftPanel
 from panels.center_panel import CenterPanel
 from panels.right_panel import RightPanel
-from panels.appbar import CustomAppBar
 from utils.settings import SettingsManager
 from utils.themes import ThemeManager
 
@@ -26,7 +25,7 @@ class ImageViewerApp:
             SettingsManager.save(self.settings)
             e.page.window.prevent_close = False
             e.page.window.close()
-    # イベント：ウインドウハンドル
+    # ウインドウハンドルのセットアップ
     def setup_window_handle(self, page: ft.Page):
         def find_handle():
             time.sleep(0.6)
@@ -36,7 +35,7 @@ class ImageViewerApp:
                     return False
             win32gui.EnumWindows(callback, None)
         threading.Thread(target=find_handle, daemon=True).start()
-    # イベント：マウスナビゲーション
+    # マウスナビゲーションのセットアップ
     def setup_mouse_navigation(self, page: ft.Page):
         def listener():
             while True:
@@ -56,25 +55,11 @@ class ImageViewerApp:
                         time.sleep(0.08)
                 time.sleep(0.01)
         threading.Thread(target=listener, daemon=True).start()
-    # イベント：ウインドウの最大化、復元
-    def toggle_maximize(self, page: ft.Page, maxmize_button):
-        page.window.maximized = not page.window.maximized
-        if page.window.maximized:
-            maxmize_button.icon = ft.Icons.FULLSCREEN_EXIT
-            maxmize_button.tooltip = "元に戻す"
-        else:
-            maxmize_button.icon = ft.Icons.FULLSCREEN
-            maxmize_button.tooltip = "最大化"
-        page.update()
-    def minimize(self, page: ft.Page):
-        page.window.minimized = not page.window.maximized
-        page.update()
     ####################
     # メイン関数
     ####################
     def main(self, page: ft.Page):
         page.title = "PNG Image Viewer with Metadata"
-        page.window.title_bar_hidden = True 
         page.window.min_width = 1024
         page.window.min_height = 576
         page.window.width = 1440
@@ -90,8 +75,7 @@ class ImageViewerApp:
         page.scroll_position_history_left = []
         page.scroll_position_history_center = []
         # アプリケーションバーやパネルの初期化
-        self.appbar       = CustomAppBar(page)
-        self.center_panel = CenterPanel(page, self.settings, self.theme_manager)
+        self.center_panel = CenterPanel(page, self.settings, self.theme_manager, "browser")
         self.right_panel  = RightPanel(page, self.settings, self.theme_manager)
         self.left_panel   = LeftPanel(page, self.settings, self.theme_manager)
         # ローディングオーバーレイ
@@ -112,7 +96,7 @@ class ImageViewerApp:
         # 最終配置
         page.add(
             ft.Column([
-                self.appbar.container,
+                #self.appbar.container,
                 ft.Row([
                     self.left_panel.container,
                     self.center_panel.container,

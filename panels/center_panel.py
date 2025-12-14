@@ -13,10 +13,11 @@ from utils.clipboard import copy_image_to_clipboard
 class CenterPanel:
     instance = None
     # 初期化
-    def __init__(self, page, settings, theme_manager):
+    def __init__(self, page, settings, theme_manager, mode):
         self.page = page
         self.settings = settings
         self.theme_manager = theme_manager
+        self.mode = mode
         CenterPanel.instance = self
         self.image_view = ft.Image(
             src="",
@@ -54,7 +55,7 @@ class CenterPanel:
             import json
             scroll_pos = json.loads(e.data)
             record_center_scroll_position(self.page, self.page.current_path_text, scroll_pos)
-    # イベント：グリッド表示に戻る
+    # イベント：サムネイルグリッド表示に戻る
     def return_to_grid(self, e):
         if self.image_view.visible:
             self.thumbnail_grid.visible = True
@@ -64,9 +65,13 @@ class CenterPanel:
                 if hasattr(container, "animate_scale") and container.scale != 1.0:
                     container.scale = 1.0
                     container.update()
-            RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), self.page.current_path_text.value)
-            self.page.update()
+            if self.mode == "browser":
+                title = "フォルダ内画像"
+            else:
+                title = "検索結果"
+            RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), title)
             replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
+            self.page.update()
     # イベント：右クリックメニュー表示
     def show_image_context_menu(self, e: ft.TapDownEvent):
         if self.thumbnail_grid.visible or not self.image_view.visible:
@@ -78,13 +83,20 @@ class CenterPanel:
         menu_y = e.global_y
         self.create_image_context_menu(menu_x, menu_y, current_path)
     ####################
-    # サムネイルグリッド表示
+    # モード切替
+    ####################
+    def switch_mode(self, mode):
+        self.mode = mode
+    ####################
+    # サムネイルグリッド表示（閲覧モード）
     ####################
     async def show_thumbnails_async(self, folder_path: str):
-        loading_overlay = self.page.overlay[0]
+        loading_overlay = self.page.overlay[1]
         loading_overlay.visible = True
-        loading_overlay.content.controls[1].value = "読み込み中…"
+        loading_overlay.name = "loading"
+        loading_overlay.content.controls[2].value = "読み込み中…"
         self.page.update()
+        await asyncio.sleep(0.1)
         self.thumbnail_grid.controls.clear()
         try:
             png_files = [p for p in Path(folder_path).iterdir() if p.suffix.lower() == ".png"]
@@ -126,17 +138,69 @@ class CenterPanel:
                 container.on_click = lambda e, p=str(png_path): self.select_image(p)
                 self.thumbnail_grid.controls.append(container)
 
-                if i % 10 == 0 or i == len(png_files) - 1:
+                if i % 50 == 0 or i == len(png_files) - 1:
                     percent = int((i + 1) / len(png_files) * 100)
                     loading_overlay.content.controls[2].value = f"読み込み中… {i+1}/{len(png_files)} ({percent}%)"
                     self.page.update()
                     await asyncio.sleep(0.01)
             except Exception as e:
-                print(f"サムネイル生成失敗 {png_path}: {e}")
+                self.page.open(ft.SnackBar(
+                    content=ft.Text(f"サムネイル生成失敗 {png_path}: {e}", color=ft.Colors.WHITE),
+                    bgcolor=ft.Colors.RED_700,
+                    duration=1500,
+                ))
         loading_overlay.visible = False
-        RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), folder_path)
-        self.page.update()
+        RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), "フォルダ内画像")
         replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
+        self.page.update()
+    ####################
+    # サムネイルグリッド表示（検索モード）
+    ####################
+    async def show_thumbnails_from_list_async(self, file_paths: list[str]):
+        loading_overlay = self.page.overlay[1]
+        loading_overlay.visible = True
+        loading_overlay.name = "loading"
+        loading_overlay.content.controls[2].value = "読み込み中…"
+        self.page.update()
+        await asyncio.sleep(0.1)
+        self.thumbnail_grid.controls.clear()
+        self.image_view.visible = False
+        self.thumbnail_grid.visible = True
+        for i, png_path in enumerate(file_paths):
+            try:
+                with Image.open(png_path) as img:
+                    img.thumbnail((160, 160))
+                    byte_io = io.BytesIO()
+                    img.save(byte_io, format="PNG")
+                    base64_str = base64.b64encode(byte_io.getvalue()).decode()
+                container = ft.Container(
+                    width=160, height=160,
+                    border_radius=12,
+                    padding=6,
+                    bgcolor=ft.Colors.GREY,
+                    alignment=ft.alignment.center,
+                    shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.3, "#000000")),
+                    animate_scale=ft.Animation(300, "ease_out_back"),
+                    scale=1.0,
+                    content=ft.Image(src_base64=base64_str, fit=ft.ImageFit.CONTAIN),
+                )
+                container.on_hover = lambda e, c=container: (setattr(c, "scale", 1.12 if e.data == "true" else 1.0) or c.update())
+                container.on_click = lambda e, p=png_path: self.select_image(p)
+                self.thumbnail_grid.controls.append(container)
+                if i % 50 == 0 or i == len(file_paths) - 1:
+                    percent = int((i + 1) / len(file_paths) * 100)
+                    loading_overlay.content.controls[2].value = f"読み込み中… {i+1}/{len(file_paths)} ({percent}%)"
+                    self.page.update()
+                    await asyncio.sleep(0.01)
+            except Exception as e:
+                self.page.open(ft.SnackBar(
+                    content=ft.Text(f"サムネイル生成失敗 {png_path}: {e}", color=ft.Colors.WHITE),
+                    bgcolor=ft.Colors.RED_700,
+                    duration=1500,
+                ))
+        loading_overlay.visible = False
+        RightPanel.instance.update_thumbnail_view(len(file_paths), "検索結果")
+        self.page.update()
     ####################
     # 画像を選択する
     ####################
@@ -168,6 +232,11 @@ class CenterPanel:
                     on_click=lambda e: (
                         copy_image_to_clipboard(self.page, current_path, True),
                         self.page.overlay.pop(),
+                        self.page.open(ft.SnackBar(
+                            content=ft.Text("画像をクリップボードにコピーしました！(透明度あり)" ,color=ft.Colors.WHITE),
+                            bgcolor=ft.Colors.GREEN_700,
+                            duration=1500,
+                        )),
                         self.page.update()
                     ),
                 ),
@@ -177,6 +246,11 @@ class CenterPanel:
                     on_click=lambda e: (
                         copy_image_to_clipboard(self.page, current_path, False),
                         self.page.overlay.pop(),
+                        self.page.open(ft.SnackBar(
+                            content=ft.Text("画像をクリップボードにコピーしました！(透明度なし)", color=ft.Colors.WHITE),
+                            bgcolor=ft.Colors.GREEN_700,
+                            duration=1500,
+                        )),
                         self.page.update()
                     ),
                 ),
