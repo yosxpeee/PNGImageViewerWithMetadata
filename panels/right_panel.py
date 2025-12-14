@@ -132,6 +132,17 @@ class RightPanel:
     def add_divider_and_text(self, text, weight_bold=False):
         self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
         self.metadata_text.controls.append(ft.Text(text, weight=ft.FontWeight.BOLD if weight_bold else ft.FontWeight.NORMAL))
+
+    def make_copyable_text(self, value: str, size=12):
+        return ft.TextField(
+            value=value,
+            read_only=True,
+            multiline=True,
+            border="none",
+            text_size=size,
+            min_lines=1,
+            max_lines=100,
+        )
     ####################
     # ポジティブプロンプトの表示部分
     ####################
@@ -152,7 +163,7 @@ class RightPanel:
             )
         ])
         self.metadata_text.controls.append(ft.Container(content=row, padding=ft.padding.only(top=0, bottom=0)))
-        self.metadata_text.controls.append(ft.Text(prompt_text, size=13))
+        self.metadata_text.controls.append(self.make_copyable_text(prompt_text, 12))
     ####################
     # ネガティブプロンプトの表示部分
     ####################
@@ -173,7 +184,7 @@ class RightPanel:
             )
         ])
         self.metadata_text.controls.append(ft.Container(content=row, padding=ft.padding.only(top=0, bottom=0)))
-        self.metadata_text.controls.append(ft.Text(negative_text, size=13))
+        self.metadata_text.controls.append(self.make_copyable_text(negative_text, 12))
     ####################
     # その他情報の表示部分
     ####################
@@ -194,4 +205,4 @@ class RightPanel:
             )
         ])
         self.metadata_text.controls.append(ft.Container(content=row, padding=ft.padding.only(top=0, bottom=0)))
-        self.metadata_text.controls.append(ft.Text(f"Steps: {other_info}", size=13))
+        self.metadata_text.controls.append(self.make_copyable_text(f"Steps: {other_info}", 12))
