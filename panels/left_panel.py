@@ -3,10 +3,14 @@ import os
 import string
 from pathlib import Path
 import win32api
+import png
+import asyncio
+import time
 
 from panels.center_panel import CenterPanel
 from panels.right_panel import RightPanel
 from utils.scroll_record import record_left_scroll_position, replay_left_scroll_position
+from utils.get_metadata import get_tEXt
 
 class LeftPanel:
     instance = None
@@ -63,7 +67,7 @@ class LeftPanel:
             border_color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE),
         )
         self.search_target_itxt = ft.TextField(
-            label="メタデータ(iTXt)に含む文字列",
+            label="メタデータ(tEXt)に含む文字列",
             hint_text="例: long hair",
             width=270,
             height=36,
@@ -83,7 +87,14 @@ class LeftPanel:
                 self.theme_switch,
             ]),
             ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-            self.pick_folder_button,
+            ft.Row([
+                self.pick_folder_button,
+                ft.ElevatedButton(
+                    "クリア", 
+                    icon=ft.Icons.CLEAR,
+                    on_click=self.clear_search_fields
+                ),
+            ]),
             self.search_folder_text,
             ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
             self.search_target_filename,
@@ -91,6 +102,7 @@ class LeftPanel:
             self.search_button,
         ], expand=True)
         self.folder_picker = ft.FilePicker(on_result=self.on_folder_picked)
+        self.folder_picker.name = "picker"
         page.overlay.append(self.folder_picker) #overlay[0]
 
         # 閲覧用アイテム
@@ -110,7 +122,6 @@ class LeftPanel:
             self.current_path_text,
             self.dir_list,
         ], expand=True)
-
         self.container = ft.Container(
             content= ft.Row([
                 self.navi_rail,
@@ -122,7 +133,7 @@ class LeftPanel:
         )
     # イベント：右アイテムの切り替え
     def switch_right_item(self, e):
-        print("Selected destination:", e.control.selected_index)
+        #print("Selected destination:", e.control.selected_index)
         if e.control.selected_index == 0:
             right_item = self.browser
         else:
@@ -155,7 +166,12 @@ class LeftPanel:
             self.search_folder_text.value = "検索フォルダ: 未選択"
             self.search_button.disabled = True
         self.page.update()
-    # イベント：ファイルブラウザのスクロール
+    # イベント：検索ディレクトリ指定の解除
+    def clear_search_fields(self, e):
+        self.search_folder_path = None
+        self.search_folder_text.value = "検索フォルダ: 未選択"
+        self.search_button.disabled = True
+        self.page.update()    # イベント：ファイルブラウザのスクロール
     def on_browser_scroll(self, e):
         if e.data:
             import json
@@ -301,16 +317,97 @@ class LeftPanel:
     # マウスの戻るボタン処理
     ####################
     async def go_back(self):
-        if self.page.history_index > 0:
-            self.page.history_index -= 1
-            self.refresh_directory(self.page.navigation_history[self.page.history_index])
-        self.page.update()
+        # 閲覧モード時のみ反応
+        if self.navi_rail.selected_index == 0:
+            if self.page.history_index > 0:
+                self.page.history_index -= 1
+                self.refresh_directory(self.page.navigation_history[self.page.history_index])
+            self.page.update()
     ####################
     # マウスの進むボタン処理
     ####################
     async def go_forward(self):
-        if self.page.history_index + 1 < len(self.page.navigation_history):
-            self.page.history_index += 1
-            self.refresh_directory(self.page.navigation_history[self.page.history_index])
+        # 閲覧モード時のみ反応
+        if self.navi_rail.selected_index == 0:
+            if self.page.history_index + 1 < len(self.page.navigation_history):
+                self.page.history_index += 1
+                self.refresh_directory(self.page.navigation_history[self.page.history_index])
+            self.page.update()
+    ####################
+    # 検索実行（非同期）
+    ####################
+    async def perform_search(self):
+        if not self.search_folder_path:
+            return
+        #print("検索対象："+self.search_folder_path)
+        folder = Path(self.search_folder_path)
+        if not folder.exists():
+            self.page.open(ft.SnackBar(ft.Text("フォルダが存在しません")))
+            self.page.update()
+            return
+        name_query = self.search_target_filename.value.strip().lower()
+        tExt_query = self.search_target_itxt.value.strip().lower()
+
+        loading = self.page.overlay[1]
+        loading.visible = True
+        loading.content.controls[2].value = "検索中…"
         self.page.update()
-    
+        await asyncio.sleep(0.1)
+        # 再帰的にPNGを検索
+        results = []
+        png_files = folder.rglob("*.png")
+        all_file_num = len(list(png_files))
+        png_files = folder.rglob("*.png") # 消費しきられるのでもう一回とる
+        i = 0
+        for png_path in png_files:
+            found_text = False
+            i += 1
+            # ファイル名チェック
+            if name_query != "" and name_query not in png_path.name.lower():
+                #print(f"{png_path} : ファイル名が対象外。skip")
+                continue
+            # メタデータ(tEXt)チェック
+            if tExt_query != "":
+                try:
+                    with open(png_path, "rb") as f:
+                        reader = png.Reader(file=f)
+                        for chunk_type, data in reader.chunks():
+                            ctype = chunk_type.decode("latin1", errors="ignore")
+                            if ctype == "tEXt":
+                                text, prompt_text, negative_text, other_info = get_tEXt(data)
+                                if tExt_query in text:
+                                    found_text = True
+                                    break
+                                if tExt_query in prompt_text:
+                                    found_text = True
+                                    break
+                                if tExt_query in negative_text:
+                                    found_text = True
+                                    break
+                                if tExt_query in other_info:
+                                    found_text = True
+                                    break
+                except Exception as e:
+                    #print(f"{png_path} : メタデータ壊れてるよ。skip")
+                    continue
+            else:
+                found_text = True
+            if found_text == True:
+                #print(f"{png_path} : 対象に含める")
+                results.append(str(png_path))
+            # 進捗表示（20個ごとに）
+            if i % 20 == 0:
+                loading.content.controls[2].value = f"検索中… {i}ファイル処理中/{all_file_num}"
+                self.page.update()
+                await asyncio.sleep(0.01)
+        #loading.visible = False #消さない
+        self.page.update()
+        await asyncio.sleep(0.1)
+        # 結果表示
+        if results:
+            await CenterPanel.instance.show_thumbnails_from_list_async(results)
+            self.page.open(ft.SnackBar(ft.Text(f"{len(results)}件の画像が見つかりました！")))
+        else:
+            CenterPanel.instance.show_no_images()
+            self.page.open(ft.SnackBar(ft.Text("該当する画像が見つかりませんでした")))
+        self.page.update()

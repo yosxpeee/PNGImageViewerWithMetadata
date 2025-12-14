@@ -1,7 +1,6 @@
 import flet as ft
 import os
 import png
-import zlib
 from pathlib import Path
 from datetime import datetime
 
@@ -77,7 +76,7 @@ class RightPanel:
             # tEXt / zTXt / iTXt 解析
             with open(image_path, "rb") as f:
                 reader = png.Reader(file=f)
-                for chunk_type, data in reader.chunks():
+                for chunk_type, data in reader.chunks(): #ここは単ファイルの解析なのでこれでよい
                     ctype = chunk_type.decode("latin1", errors="ignore")
                     if ctype == "tEXt":
                         text, prompt_text, negative_text, other_info = get_tEXt(data)
@@ -93,18 +92,12 @@ class RightPanel:
                                 self.add_other_section(other_info)
                     elif ctype == "zTXt":
                         self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
-                        text, exception = get_zTxt(data)
-                        if text != "":
-                            self.metadata_text.controls.append(ft.Text(text))
-                        else:
-                            self.metadata_text.controls.append(ft.Text(f"デコード失敗({exception})", color=ft.Colors.RED))
+                        text = get_zTxt(data)
+                        self.metadata_text.controls.append(ft.Text(text))
                     elif ctype == "iTXt":
                         self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
-                        text, exception = get_iTXt(data)
-                        if text != "":
-                            self.metadata_text.controls.append(ft.Text(text))
-                        else:
-                            self.metadata_text.controls.append(ft.Text(f"デコード失敗({exception})", color=ft.Colors.RED))
+                        text = get_iTXt(data)
+                        self.metadata_text.controls.append(ft.Text(text))
             # ファイル情報
             self.metadata_text.controls.extend([
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),

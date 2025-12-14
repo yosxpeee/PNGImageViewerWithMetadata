@@ -78,13 +78,15 @@ class CenterPanel:
         menu_y = e.global_y
         self.create_image_context_menu(menu_x, menu_y, current_path)
     ####################
-    # サムネイルグリッド表示
+    # サムネイルグリッド表示（閲覧モード）
     ####################
     async def show_thumbnails_async(self, folder_path: str):
         loading_overlay = self.page.overlay[1]
         loading_overlay.visible = True
-        loading_overlay.content.controls[1].value = "読み込み中…"
+        loading_overlay.name = "loading"
+        loading_overlay.content.controls[2].value = "読み込み中…"
         self.page.update()
+        await asyncio.sleep(0.1)
         self.thumbnail_grid.controls.clear()
         try:
             png_files = [p for p in Path(folder_path).iterdir() if p.suffix.lower() == ".png"]
@@ -126,7 +128,7 @@ class CenterPanel:
                 container.on_click = lambda e, p=str(png_path): self.select_image(p)
                 self.thumbnail_grid.controls.append(container)
 
-                if i % 10 == 0 or i == len(png_files) - 1:
+                if i % 50 == 0 or i == len(png_files) - 1:
                     percent = int((i + 1) / len(png_files) * 100)
                     loading_overlay.content.controls[2].value = f"読み込み中… {i+1}/{len(png_files)} ({percent}%)"
                     self.page.update()
@@ -137,6 +139,54 @@ class CenterPanel:
         RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), folder_path)
         self.page.update()
         replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
+    ####################
+    # サムネイルグリッド表示（検索モード）
+    ####################
+    async def show_thumbnails_from_list_async(self, file_paths: list[str], search_mode=False):
+        loading_overlay = self.page.overlay[1]
+        loading_overlay.visible = True
+        loading_overlay.name = "loading"
+        loading_overlay.content.controls[2].value = "読み込み中…"
+        self.page.update()
+        await asyncio.sleep(0.1)
+        self.thumbnail_grid.controls.clear()
+        self.image_view.visible = False
+        self.thumbnail_grid.visible = True
+        for i, png_path in enumerate(file_paths):
+            try:
+                with Image.open(png_path) as img:
+                    img.thumbnail((160, 160))
+                    byte_io = io.BytesIO()
+                    img.save(byte_io, format="PNG")
+                    base64_str = base64.b64encode(byte_io.getvalue()).decode()
+
+                container = ft.Container(
+                    width=160, height=160,
+                    border_radius=12,
+                    padding=6,
+                    bgcolor=ft.Colors.GREY,
+                    alignment=ft.alignment.center,
+                    shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.3, "#000000")),
+                    animate_scale=ft.Animation(300, "ease_out_back"),
+                    scale=1.0,
+                    content=ft.Image(src_base64=base64_str, fit=ft.ImageFit.CONTAIN),
+                )
+                container.on_hover = lambda e, c=container: (setattr(c, "scale", 1.12 if e.data == "true" else 1.0) or c.update())
+                container.on_click = lambda e, p=png_path: self.select_image(p)
+                self.thumbnail_grid.controls.append(container)
+
+                if i % 50 == 0 or i == len(file_paths) - 1:
+                    percent = int((i + 1) / len(file_paths) * 100)
+                    loading_overlay.content.controls[2].value = f"読み込み中… {i+1}/{len(file_paths)} ({percent}%)"
+                    self.page.update()
+                    await asyncio.sleep(0.01)
+            except Exception as e:
+                print(f"サムネイル生成失敗 {png_path}: {e}")
+
+        loading_overlay.visible = False
+        title = "検索結果" if search_mode else "フォルダ内画像"
+        RightPanel.instance.update_thumbnail_view(len(file_paths), title)
+        self.page.update()
     ####################
     # 画像を選択する
     ####################
