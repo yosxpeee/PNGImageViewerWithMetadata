@@ -9,7 +9,6 @@ import warnings
 from panels.left_panel import LeftPanel
 from panels.center_panel import CenterPanel
 from panels.right_panel import RightPanel
-from panels.appbar import CustomAppBar
 from utils.settings import SettingsManager
 from utils.themes import ThemeManager
 
@@ -74,7 +73,7 @@ class ImageViewerApp:
     ####################
     def main(self, page: ft.Page):
         page.title = "PNG Image Viewer with Metadata"
-        page.window.title_bar_hidden = True 
+        #page.window.title_bar_hidden = True 
         page.window.min_width = 1024
         page.window.min_height = 576
         page.window.width = 1440
@@ -90,7 +89,7 @@ class ImageViewerApp:
         page.scroll_position_history_left = []
         page.scroll_position_history_center = []
         # アプリケーションバーやパネルの初期化
-        self.appbar       = CustomAppBar(page)
+        #self.appbar       = CustomAppBar(page)
         self.center_panel = CenterPanel(page, self.settings, self.theme_manager)
         self.right_panel  = RightPanel(page, self.settings, self.theme_manager)
         self.left_panel   = LeftPanel(page, self.settings, self.theme_manager)
@@ -112,7 +111,7 @@ class ImageViewerApp:
         # 最終配置
         page.add(
             ft.Column([
-                self.appbar.container,
+                #self.appbar.container,
                 ft.Row([
                     self.left_panel.container,
                     self.center_panel.container,
