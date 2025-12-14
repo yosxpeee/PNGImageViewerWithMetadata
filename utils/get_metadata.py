@@ -37,7 +37,7 @@ def get_tEXt(data):
                 negative_text = text_raw[negative_index+17:others_index].strip()
                 other_info = text_raw[others_index+7:].strip().replace(", ", "\n")
         else:
-            text = f"tEXt: {text}"
+            text = f"tEXt: {text_raw}"
     return text, prompt_text, negative_text, other_info
 ####################
 # zTXt取得
