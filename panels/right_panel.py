@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 from utils.clipboard import copy_text_to_clipboard
+from utils.get_metadata import get_zTxt, get_iTXt, get_tEXt
 
 class RightPanel:
     instance = None
@@ -79,66 +80,31 @@ class RightPanel:
                 for chunk_type, data in reader.chunks():
                     ctype = chunk_type.decode("latin1", errors="ignore")
                     if ctype == "tEXt":
-                        text = data.decode("latin1", errors="ignore")
-                        if "::" in text:
-                            k, v = text.split("::", 1)
-                            self.add_divider_and_text(f"{ctype}: {k}: {v}")
+                        text, prompt_text, negative_text, other_info = get_tEXt(data)
+                        if text != "":
+                            self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
+                            self.metadata_text.controls.append(ft.Text(text))
                         else:
-                            positive_index = text.find('parameters')
-                            negative_index = text.find('Negative prompt: ')
-                            anothers_index = text.find('Steps: ')
-                            if positive_index != -1:
-                                if negative_index == -1:
-                                    prompt_text = text[positive_index+11:anothers_index].strip()
-                                    other_info = text[anothers_index+7:].strip().replace(", ", "\n")
-                                    self.add_prompt_section(prompt_text)
-                                    self.add_other_section(other_info)
-                                else:
-                                    prompt_text = text[positive_index+11:negative_index].strip()
-                                    negative_text = text[negative_index+17:anothers_index].strip()
-                                    other_info = text[anothers_index+7:].strip().replace(", ", "\n")
-                                    self.add_prompt_section(prompt_text)
-                                    self.add_negative_section(negative_text)
-                                    self.add_other_section(other_info)
-                            else:
-                                self.add_divider_and_text(f"{ctype}: {text}")
+                            if prompt_text != "":
+                                self.add_prompt_section(prompt_text)
+                            if negative_text != "":
+                                self.add_negative_section(negative_text)
+                            if other_info != "":
+                                self.add_other_section(other_info)
                     elif ctype == "zTXt":
                         self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
-                        try:
-                            keyword_end = data.index(b"\0")
-                            keyword = data[:keyword_end].decode("latin1")
-                            compressed = data[keyword_end+2:]
-                            decompressed = zlib.decompress(compressed)
-                            text = decompressed.decode("utf-8", errors="replace")
-                            self.metadata_text.controls.append(ft.Text(f"{keyword}: {text}"))
-                        except Exception as e:
-                            self.metadata_text.controls.append(ft.Text(f"デコード失敗({e})", color=ft.Colors.RED))
+                        text, exception = get_zTxt(data)
+                        if text != "":
+                            self.metadata_text.controls.append(ft.Text(text))
+                        else:
+                            self.metadata_text.controls.append(ft.Text(f"デコード失敗({exception})", color=ft.Colors.RED))
                     elif ctype == "iTXt":
                         self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
-                        try:
-                            null1 = data.index(b"\0")
-                            keyword = data[:null1].decode("latin1")
-                            compression_flag = data[null1+1]
-                            compression_method = data[null1+2]
-                            lang_tag_end = data.index(b"\0", null1+3)
-                            lang_tag = data[null1+3:lang_tag_end].decode("utf-8", errors="ignore")
-                            translated_keyword_end = data.index(b"\0", lang_tag_end+1)
-                            translated_keyword = data[lang_tag_end+1:translated_keyword_end].decode("utf-8", errors="replace")
-                            text_data = data[translated_keyword_end+1:]
-                            if compression_flag == 1:
-                                if compression_method != 0:
-                                    text = f"不明な圧縮方式"
-                                else:
-                                    text = zlib.decompress(text_data).decode("utf-8", errors="replace")
-                            else:
-                                text = text_data.decode("utf-8", errors="replace")
-                            if lang_tag != "":
-                                self.metadata_text.controls.append(ft.Text(f"language tag: {lang_tag}"))
-                            if translated_keyword != "":
-                                self.metadata_text.controls.append(ft.Text(f"translated keyword: {translated_keyword}"))
-                            self.metadata_text.controls.append(ft.Text(f"{keyword}: {text}"))
-                        except Exception as e:
-                            self.metadata_text.controls.append(ft.Text(f"デコード失敗({e})", color=ft.Colors.RED))
+                        text, exception = get_iTXt(data)
+                        if text != "":
+                            self.metadata_text.controls.append(ft.Text(text))
+                        else:
+                            self.metadata_text.controls.append(ft.Text(f"デコード失敗({exception})", color=ft.Colors.RED))
             # ファイル情報
             self.metadata_text.controls.extend([
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),

@@ -91,7 +91,7 @@ class LeftPanel:
             self.search_button,
         ], expand=True)
         self.folder_picker = ft.FilePicker(on_result=self.on_folder_picked)
-        page.overlay.append(self.folder_picker)
+        page.overlay.append(self.folder_picker) #overlay[0]
 
         # 閲覧用アイテム
         self.dir_list = ft.ListView(

@@ -81,7 +81,7 @@ class CenterPanel:
     # サムネイルグリッド表示
     ####################
     async def show_thumbnails_async(self, folder_path: str):
-        loading_overlay = self.page.overlay[0]
+        loading_overlay = self.page.overlay[1]
         loading_overlay.visible = True
         loading_overlay.content.controls[1].value = "読み込み中…"
         self.page.update()
@@ -204,7 +204,7 @@ class CenterPanel:
             ft.Container(bgcolor=ft.Colors.TRANSPARENT, on_click=lambda e: (self.page.overlay.pop(), self.page.update()), expand=True),
             ft.Container(content=context_menu, top=menu_y - 100, left=menu_x - 120, animate=ft.Animation(150, "decelerate")),
         ], expand=True)
-        self.page.overlay.append(overlay)
+        self.page.overlay.append(overlay) #overlay[1]
         self.page.update()
     ####################
     # 画像を非表示にする
