@@ -350,7 +350,11 @@ class LeftPanel:
         #print("検索対象："+self.search_folder_path)
         folder = Path(self.search_folder_path)
         if not folder.exists():
-            self.page.open(ft.SnackBar(ft.Text("フォルダが存在しません")))
+            self.page.open(ft.SnackBar(
+                content=ft.Text("フォルダが存在しません", color=ft.Colors.BLACK),
+                bgcolor=ft.Colors.RED_700,
+                duration=1500,
+            ))
             self.page.update()
             return
         name_query = self.search_target_filename.value.strip().lower()
@@ -414,8 +418,16 @@ class LeftPanel:
         # 結果表示
         if results:
             await CenterPanel.instance.show_thumbnails_from_list_async(results)
-            self.page.open(ft.SnackBar(ft.Text(f"{len(results)}件の画像が見つかりました！")))
+            self.page.open(ft.SnackBar(
+                content=ft.Text(f"{len(results)}件の画像が見つかりました！", color=ft.Colors.WHITE),
+                bgcolor=ft.Colors.GREEN_700,
+                duration=1500,
+            ))
         else:
             CenterPanel.instance.show_no_images()
-            self.page.open(ft.SnackBar(ft.Text("該当する画像が見つかりませんでした")))
+            self.page.open(ft.SnackBar(
+                content=ft.Text("該当する画像が見つかりませんでした", color=ft.Colors.BLACK),
+                bgcolor=ft.Colors.RED_700,
+                duration=1500,
+            ))
         self.page.update()

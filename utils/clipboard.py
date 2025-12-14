@@ -13,7 +13,7 @@ BITMAPV5HEADER_SIZE = 124
 def copy_text_to_clipboard(page: ft.Page, text: str, name: str = "テキスト"):
     page.set_clipboard(text)
     snack = ft.SnackBar(
-        content=ft.Text(f"{name}をコピーしました！"),
+        content=ft.Text(f"{name}をコピーしました！", color=ft.Colors.WHITE),
         bgcolor=ft.Colors.GREEN_700,
         duration=1500,
     )
@@ -70,7 +70,7 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
         snack = ft.SnackBar(
             content=ft.Text("画像をクリップボードにコピーしました！" + done_msg, color=ft.Colors.WHITE),
             bgcolor=ft.Colors.GREEN_700,
-            duration=2000,
+            duration=1500,
         )
         page.overlay.append(snack)
         snack.open = True
@@ -79,7 +79,7 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
         snack = ft.SnackBar(
             content=ft.Text(f"コピー失敗: {e}", color=ft.Colors.WHITE),
             bgcolor=ft.Colors.RED_700,
-            duration=3000,
+            duration=1500,
         )
         page.overlay.append(snack)
         snack.open = True
