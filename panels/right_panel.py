@@ -132,7 +132,9 @@ class RightPanel:
     def add_divider_and_text(self, text, weight_bold=False):
         self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
         self.metadata_text.controls.append(ft.Text(text, weight=ft.FontWeight.BOLD if weight_bold else ft.FontWeight.NORMAL))
-
+    ####################
+    # コピーできるテキスト
+    ####################
     def make_copyable_text(self, value: str, size=12):
         return ft.TextField(
             value=value,
@@ -161,9 +163,9 @@ class RightPanel:
                 tooltip="プロンプトをコピー",
                 on_click=lambda e: copy_text_to_clipboard(self.page, prompt_text, "プロンプト")
             )
-        ])
+        ], height=24)
         self.metadata_text.controls.append(ft.Container(content=row, padding=ft.padding.only(top=0, bottom=0)))
-        self.metadata_text.controls.append(self.make_copyable_text(prompt_text, 12))
+        self.metadata_text.controls.append(self.make_copyable_text(prompt_text, 13))
     ####################
     # ネガティブプロンプトの表示部分
     ####################
@@ -182,9 +184,9 @@ class RightPanel:
                 tooltip="ネガティブプロンプトをコピー",
                 on_click=lambda e: copy_text_to_clipboard(self.page, negative_text, "ネガティブプロンプト")
             )
-        ])
+        ], height=24)
         self.metadata_text.controls.append(ft.Container(content=row, padding=ft.padding.only(top=0, bottom=0)))
-        self.metadata_text.controls.append(self.make_copyable_text(negative_text, 12))
+        self.metadata_text.controls.append(self.make_copyable_text(negative_text, 13))
     ####################
     # その他情報の表示部分
     ####################
@@ -203,6 +205,6 @@ class RightPanel:
                 tooltip="その他情報をコピー",
                 on_click=lambda e: copy_text_to_clipboard(self.page, f"Steps: {other_info}", "その他情報")
             )
-        ])
+        ], height=24)
         self.metadata_text.controls.append(ft.Container(content=row, padding=ft.padding.only(top=0, bottom=0)))
-        self.metadata_text.controls.append(self.make_copyable_text(f"Steps: {other_info}", 12))
+        self.metadata_text.controls.append(self.make_copyable_text(f"Steps: {other_info}", 13))

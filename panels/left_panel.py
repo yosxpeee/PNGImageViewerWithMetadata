@@ -182,7 +182,9 @@ class LeftPanel:
         self.search_folder_path = None
         self.search_folder_text.value = "検索フォルダ: 未選択"
         self.search_button.disabled = True
-        self.page.update()    # イベント：ファイルブラウザのスクロール
+        RightPanel.instance.update_no_images_search()
+        self.page.update()
+    # イベント：ファイルブラウザのスクロール
     def on_browser_scroll(self, e):
         if e.data:
             import json
@@ -349,6 +351,7 @@ class LeftPanel:
     ####################
     async def perform_search(self):
         if not self.search_folder_path:
+            RightPanel.instance.update_no_images_search()
             return
         #print("検索対象："+self.search_folder_path)
         folder = Path(self.search_folder_path)
