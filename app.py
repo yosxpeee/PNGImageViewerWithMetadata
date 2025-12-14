@@ -25,7 +25,7 @@ class ImageViewerApp:
             SettingsManager.save(self.settings)
             e.page.window.prevent_close = False
             e.page.window.close()
-    # イベント：ウインドウハンドル
+    # ウインドウハンドルのセットアップ
     def setup_window_handle(self, page: ft.Page):
         def find_handle():
             time.sleep(0.6)
@@ -35,7 +35,7 @@ class ImageViewerApp:
                     return False
             win32gui.EnumWindows(callback, None)
         threading.Thread(target=find_handle, daemon=True).start()
-    # イベント：マウスナビゲーション
+    # マウスナビゲーションのセットアップ
     def setup_mouse_navigation(self, page: ft.Page):
         def listener():
             while True:
@@ -55,19 +55,6 @@ class ImageViewerApp:
                         time.sleep(0.08)
                 time.sleep(0.01)
         threading.Thread(target=listener, daemon=True).start()
-    # イベント：ウインドウの最大化、復元
-    def toggle_maximize(self, page: ft.Page, maxmize_button):
-        page.window.maximized = not page.window.maximized
-        if page.window.maximized:
-            maxmize_button.icon = ft.Icons.FULLSCREEN_EXIT
-            maxmize_button.tooltip = "元に戻す"
-        else:
-            maxmize_button.icon = ft.Icons.FULLSCREEN
-            maxmize_button.tooltip = "最大化"
-        page.update()
-    def minimize(self, page: ft.Page):
-        page.window.minimized = not page.window.maximized
-        page.update()
     ####################
     # メイン関数
     ####################

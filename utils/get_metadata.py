@@ -1,5 +1,6 @@
 import zlib
 
+####################
 # tEXt取得
 #
 # 画像がStable Diffusion WebUIで作られているかどうかはparametersがあるかどうかで判断
@@ -13,6 +14,7 @@ import zlib
 #   prompt_text   = 空文字
 #   negative_text = 空文字
 #   other_info    = 空文字
+####################
 def get_tEXt(data):
     text = ""
     prompt_text = ""
@@ -37,6 +39,9 @@ def get_tEXt(data):
         else:
             text = f"tEXt: {text}"
     return text, prompt_text, negative_text, other_info
+####################
+# zTXt取得
+####################
 def get_zTxt(data):
     keyword_end = data.index(b"\0")
     keyword = data[:keyword_end].decode("latin1")
@@ -45,6 +50,9 @@ def get_zTxt(data):
     text = decompressed.decode("utf-8", errors="replace")
     text = f"{keyword}: {text}"
     return text
+####################
+# iTXt取得
+####################
 def get_iTXt(data):
     text = ""
     exception = ""

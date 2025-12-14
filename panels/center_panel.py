@@ -134,7 +134,11 @@ class CenterPanel:
                     self.page.update()
                     await asyncio.sleep(0.01)
             except Exception as e:
-                print(f"サムネイル生成失敗 {png_path}: {e}")
+                self.page.open(ft.SnackBar(
+                    content=ft.Text(f"サムネイル生成失敗 {png_path}: {e}", color=ft.Colors.WHITE),
+                    bgcolor=ft.Colors.RED_700,
+                    duration=1500,
+                ))
         loading_overlay.visible = False
         RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), folder_path)
         replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
@@ -159,7 +163,6 @@ class CenterPanel:
                     byte_io = io.BytesIO()
                     img.save(byte_io, format="PNG")
                     base64_str = base64.b64encode(byte_io.getvalue()).decode()
-
                 container = ft.Container(
                     width=160, height=160,
                     border_radius=12,
@@ -174,15 +177,17 @@ class CenterPanel:
                 container.on_hover = lambda e, c=container: (setattr(c, "scale", 1.12 if e.data == "true" else 1.0) or c.update())
                 container.on_click = lambda e, p=png_path: self.select_image(p)
                 self.thumbnail_grid.controls.append(container)
-
                 if i % 50 == 0 or i == len(file_paths) - 1:
                     percent = int((i + 1) / len(file_paths) * 100)
                     loading_overlay.content.controls[2].value = f"読み込み中… {i+1}/{len(file_paths)} ({percent}%)"
                     self.page.update()
                     await asyncio.sleep(0.01)
             except Exception as e:
-                print(f"サムネイル生成失敗 {png_path}: {e}")
-
+                self.page.open(ft.SnackBar(
+                    content=ft.Text(f"サムネイル生成失敗 {png_path}: {e}", color=ft.Colors.WHITE),
+                    bgcolor=ft.Colors.RED_700,
+                    duration=1500,
+                ))
         loading_overlay.visible = False
         title = "検索結果" if search_mode else "フォルダ内画像"
         RightPanel.instance.update_thumbnail_view(len(file_paths), title)
@@ -254,7 +259,7 @@ class CenterPanel:
             ft.Container(bgcolor=ft.Colors.TRANSPARENT, on_click=lambda e: (self.page.overlay.pop(), self.page.update()), expand=True),
             ft.Container(content=context_menu, top=menu_y - 100, left=menu_x - 120, animate=ft.Animation(150, "decelerate")),
         ], expand=True)
-        self.page.overlay.append(overlay) #overlay[1]
+        self.page.overlay.append(overlay)
         self.page.update()
     ####################
     # 画像を非表示にする

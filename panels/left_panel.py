@@ -5,7 +5,6 @@ from pathlib import Path
 import win32api
 import png
 import asyncio
-import time
 
 from panels.center_panel import CenterPanel
 from panels.right_panel import RightPanel
@@ -22,10 +21,9 @@ class LeftPanel:
         LeftPanel.instance = self
         page.current_path_text = ft.Text("", size=12, color=theme_manager.colors["text_secondary"])
         self.current_path_text = page.current_path_text
-
         self.search_folder_text = ft.Text("検索フォルダ: 未選択", size=12, width=270)
         self.search_folder_path = None  # 実際に選んだパス
-
+        # 一番左のモード切り替えパネ(ルナビゲーションレール)
         self.navi_rail = ft.NavigationRail(
             selected_index=0,
             min_width=60,
@@ -45,7 +43,7 @@ class LeftPanel:
             ],
             on_change=self.switch_right_item,
         )
-        # どちらにも置くアイテム
+        # 閲覧/検索のどちらにも置くアイテム
         self.theme_switch = ft.Switch(
             value=settings["dark_theme"],
             on_change=self.toggle_theme,
@@ -104,7 +102,6 @@ class LeftPanel:
         self.folder_picker = ft.FilePicker(on_result=self.on_folder_picked)
         self.folder_picker.name = "picker"
         page.overlay.append(self.folder_picker) #overlay[0]
-
         # 閲覧用アイテム
         self.dir_list = ft.ListView(
             expand=True,
@@ -133,7 +130,6 @@ class LeftPanel:
         )
     # イベント：右アイテムの切り替え
     def switch_right_item(self, e):
-        #print("Selected destination:", e.control.selected_index)
         if e.control.selected_index == 0:
             right_item = self.browser
         else:
@@ -249,7 +245,6 @@ class LeftPanel:
                     ft.Text("ドライブ一覧に戻る", size=14),
                 ]),
                 height=32,
-                #alignment=ft.alignment.top_center,
                 padding=ft.padding.symmetric(horizontal=1, vertical=1),
                 border_radius=8,
                 ink=True,
@@ -311,7 +306,6 @@ class LeftPanel:
         def mli_hover(e):
             container.bgcolor = theme_colors["hover"] if e.data == "true" else None
             container.update()
-
         container = ft.Container(
             content=ft.Row([
                 ft.Icon(icon, size=14),
@@ -353,7 +347,6 @@ class LeftPanel:
         if not self.search_folder_path:
             RightPanel.instance.update_no_images_search()
             return
-        #print("検索対象："+self.search_folder_path)
         folder = Path(self.search_folder_path)
         if not folder.exists():
             self.page.open(ft.SnackBar(
@@ -365,7 +358,6 @@ class LeftPanel:
             return
         name_query = self.search_target_filename.value.strip().lower()
         tExt_query = self.search_target_itxt.value.strip().lower()
-
         loading = self.page.overlay[1]
         loading.visible = True
         loading.content.controls[2].value = "検索中…"
@@ -375,14 +367,13 @@ class LeftPanel:
         results = []
         png_files = folder.rglob("*.png")
         all_file_num = len(list(png_files))
-        png_files = folder.rglob("*.png") # 消費しきられるのでもう一回とる
+        png_files = folder.rglob("*.png") # listにすると消費しきられるのでもう一回とる
         i = 0
         for png_path in png_files:
             found_text = False
             i += 1
             # ファイル名チェック
             if name_query != "" and name_query not in png_path.name.lower():
-                #print(f"{png_path} : ファイル名が対象外。skip")
                 continue
             # メタデータ(tEXt)チェック
             if tExt_query != "":
@@ -406,12 +397,10 @@ class LeftPanel:
                                     found_text = True
                                     break
                 except Exception as e:
-                    #print(f"{png_path} : メタデータ壊れてるよ。skip")
                     continue
             else:
                 found_text = True
             if found_text == True:
-                #print(f"{png_path} : 対象に含める")
                 results.append(str(png_path))
             # 進捗表示（20個ごとに）
             if i % 20 == 0:
