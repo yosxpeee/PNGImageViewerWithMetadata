@@ -60,7 +60,6 @@ class ImageViewerApp:
     ####################
     def main(self, page: ft.Page):
         page.title = "PNG Image Viewer with Metadata"
-        #page.window.title_bar_hidden = True 
         page.window.min_width = 1024
         page.window.min_height = 576
         page.window.width = 1440
