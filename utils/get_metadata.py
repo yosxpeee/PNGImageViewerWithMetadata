@@ -45,7 +45,6 @@ def get_zTxt(data):
     text = decompressed.decode("utf-8", errors="replace")
     text = f"{keyword}: {text}"
     return text
-
 def get_iTXt(data):
     text = ""
     exception = ""

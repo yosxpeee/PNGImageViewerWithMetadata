@@ -56,7 +56,7 @@ class RightPanel:
             ft.Text(f"サムネイルビュー: {count} 枚", size=16, weight=ft.FontWeight.BOLD),
             ft.Text(path, size=12, color=ft.Colors.OUTLINE),
         ])
-        self.page.update()
+        #self.page.update()
     ####################
     # メタデータ表示の更新
     ####################

@@ -65,8 +65,8 @@ class CenterPanel:
                     container.scale = 1.0
                     container.update()
             RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), self.page.current_path_text.value)
-            self.page.update()
             replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
+            self.page.update()
     # イベント：右クリックメニュー表示
     def show_image_context_menu(self, e: ft.TapDownEvent):
         if self.thumbnail_grid.visible or not self.image_view.visible:
@@ -137,8 +137,8 @@ class CenterPanel:
                 print(f"サムネイル生成失敗 {png_path}: {e}")
         loading_overlay.visible = False
         RightPanel.instance.update_thumbnail_view(len(self.thumbnail_grid.controls), folder_path)
-        self.page.update()
         replay_center_scroll_position(self.page, self.page.current_path_text, self.thumbnail_grid)
+        self.page.update()
     ####################
     # サムネイルグリッド表示（検索モード）
     ####################
