@@ -139,6 +139,14 @@ class LeftPanel:
         else:
             right_item = self.search
         self.container.content.controls[1] = right_item
+        #中央ペインはクリアして直前の処理をやり直す
+        CenterPanel.instance.image_view.visible = False
+        CenterPanel.instance.thumbnail_grid.visible = False
+        CenterPanel.instance.thumbnail_grid.controls.clear()
+        if e.control.selected_index == 0:
+            self.refresh_directory(self.current_path_text.value)
+        else:
+            self.page.run_task(self.perform_search)
         self.page.update()
     # イベント：トグルスイッチによるテーマ切り替え
     def toggle_theme(self, e):
@@ -218,7 +226,7 @@ class LeftPanel:
         # ── 通常のフォルダ処理 ──
         else:
             p = Path(path)
-            self.current_path_text.value = f"現在: {path}"
+            self.current_path_text.value = f"{path}"
             # サムネイル読み込み判定
             try:
                 has_png = any(item.suffix.lower() == ".png" for item in p.iterdir())
