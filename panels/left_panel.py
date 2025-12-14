@@ -19,6 +19,7 @@ class LeftPanel:
         self.settings = settings
         self.theme_manager = theme_manager
         LeftPanel.instance = self
+        self.interrupt_current_process = False
         page.current_path_text = ft.Text("", size=12, color=theme_manager.colors["text_secondary"])
         self.current_path_text = page.current_path_text
         self.search_folder_text = ft.Text("検索フォルダ: 未選択", size=12, width=270)
@@ -131,6 +132,9 @@ class LeftPanel:
         )
     # イベント：右アイテムの切り替え
     def switch_right_item(self, e):
+        # 切り替えようとした時点でキャンセルフラグは確実にリセット
+        self.interrupt_current_process = False
+        CenterPanel.instance.interrupt_current_process = False
         if e.control.selected_index == 0:
             right_item = self.browser
             CenterPanel.instance.switch_mode("browser")
@@ -156,7 +160,7 @@ class LeftPanel:
         self.settings["dark_theme"] = self.theme_switch.value
         # 色を更新
         self.theme_manager.update_colors()
-        # テーマを全パネルに適用
+        # テーマを全てに適用
         self.theme_manager.apply_to_app(
             self.page,
             self,
@@ -165,6 +169,9 @@ class LeftPanel:
         )
     # イベント：ファイルピッカー
     def pick_folder(self, e):
+        #ディレクトリを選びなおそうとした時点で確実にキャンセルのフラグは消す
+        CenterPanel.instance.interrupt_current_process = False
+        self.interrupt_current_process = False
         self.folder_picker.get_directory_path(dialog_title="検索対象のフォルダを選択")
     def on_folder_picked(self, e: ft.FilePickerResultEvent):
         if e.path:
@@ -373,6 +380,21 @@ class LeftPanel:
         png_files = folder.rglob("*.png") # listにすると消費しきられるのでもう一回とる
         i = 0
         for png_path in png_files:
+            if self.interrupt_current_process == True:
+                #中断した旨表示
+                self.page.open(ft.SnackBar(
+                    content=ft.Text("検索を中断しました。", color=ft.Colors.WHITE),
+                    bgcolor=ft.Colors.RED_700,
+                    duration=1500,
+                ))
+                #中央ペインはリセットせず、オーバーレイ解除
+                #(ファイル検索の段階ならば前の検索結果は残しておきたい)
+                loading.visible = False
+                self.page.update()
+                #キャンセルフラグリセット
+                self.interrupt_current_process = False
+                CenterPanel.instance.interrupt_current_process = False
+                return
             found_text = False
             i += 1
             # ファイル名チェック
@@ -417,11 +439,7 @@ class LeftPanel:
         # 結果表示
         if results:
             await CenterPanel.instance.show_thumbnails_from_list_async(results)
-            self.page.open(ft.SnackBar(
-                content=ft.Text(f"{len(results)}件の画像が見つかりました！", color=ft.Colors.WHITE),
-                bgcolor=ft.Colors.GREEN_700,
-                duration=1500,
-            ))
+            # 続けてサムネグリッドを出しにいくので、ここでSnackは出さない
             loading.visible = False
         else:
             CenterPanel.instance.show_no_images()

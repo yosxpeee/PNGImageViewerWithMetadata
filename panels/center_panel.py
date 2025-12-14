@@ -19,6 +19,7 @@ class CenterPanel:
         self.theme_manager = theme_manager
         self.mode = mode
         CenterPanel.instance = self
+        self.interrupt_current_process = False
         self.image_view = ft.Image(
             src="",
             fit=ft.ImageFit.CONTAIN,
@@ -113,6 +114,7 @@ class CenterPanel:
         self.image_view.visible = False
         self.thumbnail_grid.visible = True
         for i, png_path in enumerate(png_files):
+            # 履歴操作されたら即座に中止
             if self.page.navigation_history[self.page.history_index] != folder_path:
                 loading_overlay.visible = False
                 self.page.update()
@@ -169,6 +171,26 @@ class CenterPanel:
         for i, png_path in enumerate(file_paths):
             try:
                 with Image.open(png_path) as img:
+                    if self.interrupt_current_process == True:
+                        #中断した旨表示
+                        self.page.open(ft.SnackBar(
+                            content=ft.Text("サムネイル表示を中断しました。", color=ft.Colors.WHITE),
+                            bgcolor=ft.Colors.RED_700,
+                            duration=1500,
+                        ))
+                        #右ペインの表示変更
+                        RightPanel.instance.update_no_images_search()
+                        #中央ペインのクリア
+                        self.thumbnail_grid.controls.clear()
+                        self.thumbnail_grid.visible = True
+                        #オーバーレイ解除
+                        loading_overlay.visible = False
+                        self.page.update()
+                        #キャンセルフラグリセット
+                        self.interrupt_current_process = False
+                        from panels.left_panel import LeftPanel #強引
+                        LeftPanel.instance.interrupt_current_process = False
+                        return
                     img.thumbnail((160, 160))
                     byte_io = io.BytesIO()
                     img.save(byte_io, format="PNG")
@@ -199,6 +221,9 @@ class CenterPanel:
                     duration=1500,
                 ))
         loading_overlay.visible = False
+        #表示しきったら念のためキャンセルフラグリセット
+        self.interrupt_current_process = False
+        CenterPanel.instance.interrupt_current_process = False
         RightPanel.instance.update_thumbnail_view(len(file_paths), "検索結果")
         self.page.update()
     ####################

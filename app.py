@@ -19,12 +19,17 @@ class ImageViewerApp:
     def __init__(self):
         self.settings = SettingsManager.load()
         self.theme_manager = ThemeManager(self.settings)
+        self.interrupt_current_process = False
     # イベント：ウインドウを閉じる
     def on_window_close(self, e):
         if e.data == "close":
             SettingsManager.save(self.settings)
             e.page.window.prevent_close = False
             e.page.window.close()
+    def stop_process(self, e):
+        #フラグだけ立てる
+        CenterPanel.instance.interrupt_current_process = True
+        LeftPanel.instance.interrupt_current_process = True
     # ウインドウハンドルのセットアップ
     def setup_window_handle(self, page: ft.Page):
         def find_handle():
@@ -74,7 +79,7 @@ class ImageViewerApp:
         page.current_image_path = None
         page.scroll_position_history_left = []
         page.scroll_position_history_center = []
-        # アプリケーションバーやパネルの初期化
+        # アプリケーションバーや各ペインの初期化
         self.center_panel = CenterPanel(page, self.settings, self.theme_manager, "browser")
         self.right_panel  = RightPanel(page, self.settings, self.theme_manager)
         self.left_panel   = LeftPanel(page, self.settings, self.theme_manager)
@@ -89,6 +94,7 @@ class ImageViewerApp:
                 ft.ProgressRing(width=60, height=60, stroke_width=7, color=ft.Colors.CYAN_400),
                 ft.Text("読み込み中…", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=24),
+            on_click=self.stop_process,
         )
         page.overlay.append(loading_overlay)
         # テーマ適用
@@ -96,7 +102,6 @@ class ImageViewerApp:
         # 最終配置
         page.add(
             ft.Column([
-                #self.appbar.container,
                 ft.Row([
                     self.left_panel.container,
                     self.center_panel.container,
