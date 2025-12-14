@@ -223,6 +223,11 @@ class CenterPanel:
                     on_click=lambda e: (
                         copy_image_to_clipboard(self.page, current_path, True),
                         self.page.overlay.pop(),
+                        self.page.open(ft.SnackBar(
+                            content=ft.Text("画像をクリップボードにコピーしました！(透明度あり)" ,color=ft.Colors.WHITE),
+                            bgcolor=ft.Colors.GREEN_700,
+                            duration=1500,
+                        )),
                         self.page.update()
                     ),
                 ),
@@ -232,6 +237,11 @@ class CenterPanel:
                     on_click=lambda e: (
                         copy_image_to_clipboard(self.page, current_path, False),
                         self.page.overlay.pop(),
+                        self.page.open(ft.SnackBar(
+                            content=ft.Text("画像をクリップボードにコピーしました！(透明度なし)", color=ft.Colors.WHITE),
+                            bgcolor=ft.Colors.GREEN_700,
+                            duration=1500,
+                        )),
                         self.page.update()
                     ),
                 ),

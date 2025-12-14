@@ -17,7 +17,6 @@ def copy_text_to_clipboard(page: ft.Page, text: str, name: str = "テキスト")
         bgcolor=ft.Colors.GREEN_700,
         duration=1500,
     ))
-    page.update()
 ####################
 # 画像をクリップボードにコピー
 ####################
@@ -40,7 +39,6 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
             win32clipboard.OpenClipboard()
             win32clipboard.EmptyClipboard()
             win32clipboard.SetClipboardData(win32clipboard.CF_DIBV5, data)
-            done_msg = "(透明度あり)"
         else:
             if img.mode in ('RGBA', 'LA', 'P'):
                 background = Image.new('RGB', img.size, (255, 255, 255))
@@ -56,7 +54,6 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
             win32clipboard.OpenClipboard()
             win32clipboard.EmptyClipboard()
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-            done_msg = "(透明度なし)"
             output.close()
         # PNGも登録
         buf = io.BytesIO()
@@ -65,16 +62,9 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
         if png_format:
             win32clipboard.SetClipboardData(png_format, buf.getvalue())
         win32clipboard.CloseClipboard()
-        page.open(ft.SnackBar(
-            content=ft.Text("画像をクリップボードにコピーしました！" + done_msg, color=ft.Colors.WHITE),
-            bgcolor=ft.Colors.GREEN_700,
-            duration=1500,
-        ))
-        #page.update()
     except Exception as e:
         page.open(ft.SnackBar(
             content=ft.Text(f"コピー失敗: {e}", color=ft.Colors.WHITE),
             bgcolor=ft.Colors.RED_700,
             duration=1500,
         ))
-        #page.update()
