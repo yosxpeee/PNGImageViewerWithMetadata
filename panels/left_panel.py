@@ -144,7 +144,10 @@ class LeftPanel:
         CenterPanel.instance.thumbnail_grid.visible = False
         CenterPanel.instance.thumbnail_grid.controls.clear()
         if e.control.selected_index == 0:
-            self.refresh_directory(self.current_path_text.value)
+            if self.current_path_text.value == "ドライブを選択してください":
+                self.refresh_directory("<DRIVES>")
+            else:
+                self.refresh_directory(self.current_path_text.value)
         else:
             self.page.run_task(self.perform_search)
         self.page.update()
@@ -412,7 +415,6 @@ class LeftPanel:
                 loading.content.controls[2].value = f"検索中… {i}ファイル処理中/{all_file_num}"
                 self.page.update()
                 await asyncio.sleep(0.01)
-        #loading.visible = False #消さない
         self.page.update()
         await asyncio.sleep(0.1)
         # 結果表示
@@ -423,6 +425,7 @@ class LeftPanel:
                 bgcolor=ft.Colors.GREEN_700,
                 duration=1500,
             ))
+            loading.visible = False
         else:
             CenterPanel.instance.show_no_images()
             self.page.open(ft.SnackBar(
@@ -430,4 +433,6 @@ class LeftPanel:
                 bgcolor=ft.Colors.RED_700,
                 duration=1500,
             ))
+            RightPanel.instance.update_no_images_search()
+            loading.visible = False #続きの処理がないのでここでオーバーレイを消す
         self.page.update()

@@ -39,11 +39,19 @@ class RightPanel:
         self.page.update()
     ####################
     # 画像が存在しないときの画面
+    ####################
     def update_no_images(self):
         self.metadata_text.controls.clear()
         self.metadata_text.controls.extend([
             ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
             ft.Text("このフォルダにPNG画像がありません", size=16),
+        ])
+        self.page.update()
+    def update_no_images_search(self):
+        self.metadata_text.controls.clear()
+        self.metadata_text.controls.extend([
+            ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+            ft.Text("検索条件に一致する画像がありません。", size=16),
         ])
         self.page.update()
     ####################
