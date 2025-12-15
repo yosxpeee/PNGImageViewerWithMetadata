@@ -26,11 +26,20 @@ class LeftPanel:
         self.search_folder_text = ft.Text("検索フォルダ: 未選択", size=12, width=270)
         self.search_folder_path = None  # 実際に選んだパス
         # 一番左のモード切り替えパネ(ルナビゲーションレール)
+        # 閲覧/検索のどちらにも置くアイテム
+        self.theme_switch = ft.Switch(
+            value=settings["dark_theme"],
+            on_change=self.toggle_theme,
+            tooltip="ダークモード",
+            label_position=ft.LabelPosition.LEFT,
+            height=24,
+        )
         self.navi_rail = ft.NavigationRail(
             selected_index=0,
             min_width=60,
             width=60,
             group_alignment=-0.9,
+            leading=self.theme_switch,
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icons.REMOVE_RED_EYE_OUTLINED,
@@ -46,14 +55,6 @@ class LeftPanel:
             on_change=self.switch_right_item,
         )
 
-        # 閲覧/検索のどちらにも置くアイテム
-        self.theme_switch = ft.Switch(
-            value=settings["dark_theme"],
-            on_change=self.toggle_theme,
-            label="ダークモード",
-            label_position=ft.LabelPosition.LEFT,
-            height=36,
-        )
         # 閲覧用アイテム
         self.dir_list = ft.ListView(
             expand=True,
@@ -66,7 +67,6 @@ class LeftPanel:
                 ft.Icon(ft.Icons.SPACE_DASHBOARD),
                 ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
                 ft.Container(expand=True),
-                self.theme_switch,
             ]),
             self.current_path_text,
             self.dir_list,
@@ -111,7 +111,6 @@ class LeftPanel:
                 ft.Icon(ft.Icons.SEARCH),
                 ft.Text("ファイル検索", weight=ft.FontWeight.BOLD),
                 ft.Container(expand=True),
-                self.theme_switch,
             ]),
             ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
             ft.Row([
