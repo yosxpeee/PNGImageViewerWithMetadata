@@ -8,7 +8,7 @@ import asyncio
 
 from panels.right_panel import RightPanel
 from utils.scroll_record import record_center_scroll_position, replay_center_scroll_position
-from utils.clipboard import copy_image_to_clipboard, save_without_metadata
+from utils.right_click_menu import create_image_context_menu
 
 class CenterPanel:
     instance = None
@@ -82,7 +82,7 @@ class CenterPanel:
             return
         menu_x = e.global_x
         menu_y = e.global_y
-        self.create_image_context_menu(menu_x, menu_y, current_path)
+        create_image_context_menu(self.page, menu_x, menu_y, current_path)
     ####################
     # モード切替
     ####################
@@ -247,60 +247,4 @@ class CenterPanel:
         self.image_view.visible = False
         self.thumbnail_grid.visible = False
         RightPanel.instance.update_no_images()
-        self.page.update()
-    ####################
-    # 右クリックメニューの作成
-    ####################
-    def create_image_context_menu(self, menu_x, menu_y, current_path):
-        context_menu = ft.Container(
-            width=240,
-            bgcolor=ft.Colors.with_opacity(0.98, ft.Colors.SURFACE),
-            border_radius=8,
-            shadow=ft.BoxShadow(
-                blur_radius=16,
-                color=ft.Colors.with_opacity(0.25, ft.Colors.BLACK),
-                offset=(0, 4),
-            ),
-            padding=4,
-            content=ft.Column([
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.COPY_ALL, size=18),
-                    title=ft.Text("画像をクリップボードにコピー\n(透明度あり)", size=12),
-                    on_click=lambda e: copy_image_to_clipboard(self.page, current_path, True)
-                ),
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.COPY, size=18),
-                    title=ft.Text("画像をクリップボードにコピー\n(透明度なし)", size=12),
-                    on_click=lambda e: copy_image_to_clipboard(self.page, current_path, False)
-                ),
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.SAVE, size=18),
-                    title=ft.Text("メタデータを消去して保存する", size=12),
-                    on_click=lambda e: save_without_metadata(self.page, current_path)
-                ),
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
-                    title=ft.Text("この画像の保存ディレクトリを\nエクスプローラーで開く", size=12),
-                    on_click=lambda e: (
-                        __import__("subprocess").Popen(f'explorer /select,"{current_path}"'),
-                        self.page.overlay.pop(),
-                        self.page.update()
-                    ),
-                ),
-                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.CLOSE, size=18),
-                    title=ft.Text("キャンセル", size=12, color=ft.Colors.ERROR),
-                    on_click=lambda e: (
-                        self.page.overlay.pop(),
-                        self.page.update()
-                    ),
-                ),
-            ], spacing=0),
-        )
-        overlay = ft.Stack([
-            ft.Container(bgcolor=ft.Colors.TRANSPARENT, on_click=lambda e: (self.page.overlay.pop(), self.page.update()), expand=True),
-            ft.Container(content=context_menu, top=menu_y - 100, left=menu_x - 120, animate=ft.Animation(150, "decelerate")),
-        ], expand=True)
-        self.page.overlay.append(overlay)
         self.page.update()

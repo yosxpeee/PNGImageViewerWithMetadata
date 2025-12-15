@@ -4,7 +4,7 @@ import png
 from pathlib import Path
 from datetime import datetime
 
-from utils.clipboard import copy_text_to_clipboard
+from utils.right_click_menu import copy_text_to_clipboard
 from utils.get_metadata import get_zTxt, get_iTXt, get_tEXt
 
 class RightPanel:
