@@ -20,6 +20,7 @@ class LeftPanel:
         self.theme_manager = theme_manager
         LeftPanel.instance = self
         self.interrupt_current_process = False
+        self.rerun_search = False
         page.current_path_text = ft.Text("", size=12, color=theme_manager.colors["text_secondary"])
         self.current_path_text = page.current_path_text
         self.search_folder_text = ft.Text("検索フォルダ: 未選択", size=12, width=270)
@@ -52,6 +53,32 @@ class LeftPanel:
             label="ダークモード",
             label_position=ft.LabelPosition.LEFT,
             height=36,
+        )
+        # 閲覧用アイテム
+        self.dir_list = ft.ListView(
+            expand=True,
+            spacing=0,
+            padding=0,
+            on_scroll=self.on_browser_scroll,
+        )
+        self.browser = ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.SPACE_DASHBOARD),
+                ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
+                ft.Container(expand=True),
+                self.theme_switch,
+            ]),
+            self.current_path_text,
+            self.dir_list,
+        ], expand=True)
+        self.container = ft.Container(
+            content= ft.Row([
+                self.navi_rail,
+                self.browser, #初期状態は閲覧モード固定
+            ]),
+            padding=10,
+            width=360,
+            bgcolor=theme_manager.colors["bg_panel"],
         )
         # 検索用アイテム
         self.pick_folder_button = ft.ElevatedButton(
@@ -104,32 +131,6 @@ class LeftPanel:
         self.folder_picker = ft.FilePicker(on_result=self.on_folder_picked)
         self.folder_picker.name = "picker"
         page.overlay.append(self.folder_picker)
-        # 閲覧用アイテム
-        self.dir_list = ft.ListView(
-            expand=True,
-            spacing=0,
-            padding=0,
-            on_scroll=self.on_browser_scroll,
-        )
-        self.browser = ft.Column([
-            ft.Row([
-                ft.Icon(ft.Icons.SPACE_DASHBOARD),
-                ft.Text("ファイルブラウザ", weight=ft.FontWeight.BOLD),
-                ft.Container(expand=True),
-                self.theme_switch,
-            ]),
-            self.current_path_text,
-            self.dir_list,
-        ], expand=True)
-        self.container = ft.Container(
-            content= ft.Row([
-                self.navi_rail,
-                self.browser, #初期状態は閲覧モード固定
-            ]),
-            padding=10,
-            width=360,
-            bgcolor=theme_manager.colors["bg_panel"],
-        )
     # イベント：右アイテムの切り替え
     def switch_right_item(self, e):
         # 切り替えようとした時点でキャンセルフラグは確実にリセット
@@ -152,7 +153,8 @@ class LeftPanel:
             else:
                 self.refresh_directory(self.current_path_text.value)
         else:
-            self.page.run_task(self.perform_search)
+            if self.rerun_search == True:
+                self.page.run_task(self.perform_search)
         self.page.update()
     # イベント：トグルスイッチによるテーマ切り替え
     def toggle_theme(self, e):
@@ -182,6 +184,8 @@ class LeftPanel:
             self.search_folder_path = None
             self.search_folder_text.value = "検索フォルダ: 未選択"
             self.search_button.disabled = True
+        # この操作をしたら検索対象を変えたということなので、モード切替時に再現するフラグは落とす
+        self.rerun_search = False
         self.page.update()
     # イベント：検索ディレクトリ指定の解除
     def clear_search_fields(self, e):
@@ -394,6 +398,7 @@ class LeftPanel:
                 #キャンセルフラグリセット
                 self.interrupt_current_process = False
                 CenterPanel.instance.interrupt_current_process = False
+                self.rerun_search = False
                 return
             found_text = False
             i += 1

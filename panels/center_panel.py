@@ -190,6 +190,7 @@ class CenterPanel:
                         self.interrupt_current_process = False
                         from panels.left_panel import LeftPanel #強引
                         LeftPanel.instance.interrupt_current_process = False
+                        LeftPanel.instance.rerun_search = False
                         return
                     img.thumbnail((160, 160))
                     byte_io = io.BytesIO()
@@ -224,6 +225,9 @@ class CenterPanel:
         #表示しきったら念のためキャンセルフラグリセット
         self.interrupt_current_process = False
         CenterPanel.instance.interrupt_current_process = False
+        #表示しきったらモード切替時の再現フラグを有効にする
+        from panels.left_panel import LeftPanel #強引
+        LeftPanel.instance.rerun_search = True
         RightPanel.instance.update_thumbnail_view(len(file_paths), "検索結果")
         self.page.update()
     ####################
