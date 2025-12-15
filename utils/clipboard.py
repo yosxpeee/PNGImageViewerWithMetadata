@@ -1,11 +1,13 @@
 import flet as ft
 import io
-from PIL import Image
-import numpy as np
-import struct
+import os
 import win32clipboard
+import struct
+import numpy as np
+from pathlib import Path
+from PIL import Image
 
-BITMAPV5HEADER_SIZE = 124
+from utils.pngdata import copy_pngdata_with_alpha, copy_pngdata
 
 ####################
 # テキストをクリップボードにコピー
@@ -24,37 +26,17 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
     try:
         img = Image.open(image_path)
         if alpha:
-            img = img.convert("RGBA")
-            w, h = img.size
-            arr = np.array(img)
-            bgra = arr[:, :, [2, 1, 0, 3]]
-            pixels = np.flipud(bgra).tobytes()
-            header = struct.pack(
-                "<LllHHLLllLLllllLLllllLLLlLLLLLLLLL",
-                BITMAPV5HEADER_SIZE, w, h, 1, 32, 3, 0, 0, 0, 0, 0, 0,
-                0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000,
-                0x73524742, 0,0,0,0,0,0,0,0,0, 0,0,0, 0, 0,0,0,0
-            )
-            data = header + pixels
+            data = copy_pngdata_with_alpha(image_path)
             win32clipboard.OpenClipboard()
             win32clipboard.EmptyClipboard()
             win32clipboard.SetClipboardData(win32clipboard.CF_DIBV5, data)
+            msg = "あり"
         else:
-            if img.mode in ('RGBA', 'LA', 'P'):
-                background = Image.new('RGB', img.size, (255, 255, 255))
-                if img.mode == 'P':
-                    img = img.convert('RGBA')
-                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-                img = background
-            elif img.mode != 'RGB':
-                img = img.convert('RGB')
-            output = io.BytesIO()
-            img.save(output, format='BMP')
-            data = output.getvalue()[14:]
+            data = copy_pngdata(image_path)
             win32clipboard.OpenClipboard()
             win32clipboard.EmptyClipboard()
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-            output.close()
+            msg = "なし"
         # PNGも登録
         buf = io.BytesIO()
         img.save(buf, format="PNG")
@@ -62,9 +44,83 @@ def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
         if png_format:
             win32clipboard.SetClipboardData(png_format, buf.getvalue())
         win32clipboard.CloseClipboard()
+        page.overlay.pop(),
+        page.open(ft.SnackBar(
+            content=ft.Text(f"画像をクリップボードにコピーしました！(透明度{msg})" ,color=ft.Colors.WHITE),
+            bgcolor=ft.Colors.GREEN_700,
+            duration=1500,
+        ))
+        img.close()
+        page.update()
     except Exception as e:
         page.open(ft.SnackBar(
             content=ft.Text(f"コピー失敗: {e}", color=ft.Colors.WHITE),
             bgcolor=ft.Colors.RED_700,
             duration=1500,
         ))
+        page.update
+####################
+# メタデータなしで所定の場所に保存する
+####################
+def save_without_metadata(page: ft.Page, image_path: str):
+    try:
+        img = Image.open(image_path)
+        data = copy_pngdata_with_alpha(image_path)
+        # output ディレクトリを確保
+        script_dir = Path(__import__("__main__").__file__).parent.resolve()
+        output_dir = script_dir / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        # 保存パス
+        original_path = Path(image_path)
+        new_filename = original_path.stem + "_cleaned" + original_path.suffix
+        save_path = output_dir / new_filename
+        # 元画像からサイズ取得
+        with Image.open(image_path) as img:
+            w, h = img.size
+            img = img.convert("RGBA")
+        # ヘッダーサイズをdata自身から正しく読み取る（BITMAPINFOHEADERの先頭4バイト）
+        header_size = struct.unpack("<I", data[0:4])[0]
+        pixel_data = data[header_size:]
+        # パディングを考慮した正しい行サイズ（4バイトアライメント）
+        bytes_per_pixel = 4
+        padded_row_size = ((w * bytes_per_pixel + 3) // 4) * 4
+        expected_size = padded_row_size * h
+        # 実際のサイズと比較（デバッグ用にprint残してもOK）
+        actual_size = len(pixel_data)
+        if actual_size != expected_size:
+            # 強制的に正しいサイズに切り詰める
+            if actual_size == expected_size + 8 and header_size == 124:
+                pixel_data = pixel_data[:-8]
+            else:
+                raise ValueError(f"ピクセルデータサイズ不一致: {actual_size} != {expected_size}")
+        # NumPyでreshape
+        arr = np.frombuffer(pixel_data, dtype=np.uint8).reshape((h, padded_row_size))
+        # パディング部分を削除して (h, w, 4) に
+        arr = arr[:, :w * 4].reshape((h, w, 4))
+        # BGRA → RGBA
+        arr = arr[:, :, [2, 1, 0, 3]]
+        # BITMAPは下から始まるので反転
+        arr = np.flipud(arr)
+        # 画像作成＆保存
+        clean_img = Image.fromarray(arr, mode="RGBA")
+        clean_img.save(save_path, format="PNG")
+        # outputディレクトリで作業していた場合のコーナーケース対応
+        # (サムネイル表示に戻ってしまうが致し方なし、コーナーケースなので許容する)
+        if os.path.dirname(page.current_image_path) == os.path.dirname(str(save_path)):
+            from panels.left_panel import LeftPanel
+            LeftPanel.instance.refresh_directory(os.path.dirname(image_path))
+        img.close()
+        page.overlay.pop(),
+        page.open(ft.SnackBar(
+            content=ft.Text(f"画像をメタデータなしで保存しました！ [{str(save_path)}]" ,color=ft.Colors.WHITE),
+            bgcolor=ft.Colors.GREEN_700,
+            duration=1500,
+        ))
+        page.update()
+    except Exception as e:
+        page.open(ft.SnackBar(
+            content=ft.Text(f"ファイル保存失敗: {e}", color=ft.Colors.WHITE),
+            bgcolor=ft.Colors.RED_700,
+            duration=1500,
+        ))
+        page.update()

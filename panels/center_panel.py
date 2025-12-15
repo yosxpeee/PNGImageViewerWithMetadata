@@ -8,7 +8,7 @@ import asyncio
 
 from panels.right_panel import RightPanel
 from utils.scroll_record import record_center_scroll_position, replay_center_scroll_position
-from utils.clipboard import copy_image_to_clipboard
+from utils.clipboard import copy_image_to_clipboard, save_without_metadata
 
 class CenterPanel:
     instance = None
@@ -241,6 +241,14 @@ class CenterPanel:
         RightPanel.instance.update_metadata(path)
         self.page.update()
     ####################
+    # 画像を非表示にする
+    ####################
+    def show_no_images(self):
+        self.image_view.visible = False
+        self.thumbnail_grid.visible = False
+        RightPanel.instance.update_no_images()
+        self.page.update()
+    ####################
     # 右クリックメニューの作成
     ####################
     def create_image_context_menu(self, menu_x, menu_y, current_path):
@@ -257,35 +265,22 @@ class CenterPanel:
             content=ft.Column([
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.COPY_ALL, size=18),
-                    title=ft.Text("画像をクリップボードにコピー\n(透明度維持)", size=12),
-                    on_click=lambda e: (
-                        copy_image_to_clipboard(self.page, current_path, True),
-                        self.page.overlay.pop(),
-                        self.page.open(ft.SnackBar(
-                            content=ft.Text("画像をクリップボードにコピーしました！(透明度あり)" ,color=ft.Colors.WHITE),
-                            bgcolor=ft.Colors.GREEN_700,
-                            duration=1500,
-                        )),
-                        self.page.update()
-                    ),
+                    title=ft.Text("画像をクリップボードにコピー\n(透明度あり)", size=12),
+                    on_click=lambda e: copy_image_to_clipboard(self.page, current_path, True)
                 ),
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.COPY, size=18),
                     title=ft.Text("画像をクリップボードにコピー\n(透明度なし)", size=12),
-                    on_click=lambda e: (
-                        copy_image_to_clipboard(self.page, current_path, False),
-                        self.page.overlay.pop(),
-                        self.page.open(ft.SnackBar(
-                            content=ft.Text("画像をクリップボードにコピーしました！(透明度なし)", color=ft.Colors.WHITE),
-                            bgcolor=ft.Colors.GREEN_700,
-                            duration=1500,
-                        )),
-                        self.page.update()
-                    ),
+                    on_click=lambda e: copy_image_to_clipboard(self.page, current_path, False)
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.SAVE, size=18),
+                    title=ft.Text("メタデータを消去して保存する", size=12),
+                    on_click=lambda e: save_without_metadata(self.page, current_path)
                 ),
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.FOLDER_OPEN, size=18),
-                    title=ft.Text("フォルダをエクスプローラーで開く", size=12),
+                    title=ft.Text("この画像の保存ディレクトリを\nエクスプローラーで開く", size=12),
                     on_click=lambda e: (
                         __import__("subprocess").Popen(f'explorer /select,"{current_path}"'),
                         self.page.overlay.pop(),
@@ -308,12 +303,4 @@ class CenterPanel:
             ft.Container(content=context_menu, top=menu_y - 100, left=menu_x - 120, animate=ft.Animation(150, "decelerate")),
         ], expand=True)
         self.page.overlay.append(overlay)
-        self.page.update()
-    ####################
-    # 画像を非表示にする
-    ####################
-    def show_no_images(self):
-        self.image_view.visible = False
-        self.thumbnail_grid.visible = False
-        RightPanel.instance.update_no_images()
         self.page.update()
