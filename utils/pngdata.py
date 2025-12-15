@@ -8,8 +8,7 @@ BITMAPV5HEADER_SIZE = 124
 ####################
 # PNG画像を透明度ありでコピーする
 ####################
-def copy_pngdata_with_alpha(image_path):
-    img = Image.open(image_path)
+def copy_pngdata_with_alpha(img):
     img = img.convert("RGBA")
     w, h = img.size
     arr = np.array(img)
@@ -22,13 +21,11 @@ def copy_pngdata_with_alpha(image_path):
         0x73524742, 0,0,0,0,0,0,0,0,0, 0,0,0, 0, 0,0,0,0
     )
     data = header + pixels
-    img.close()
     return data
 ####################
 # PNG画像を透明度なしでコピーする
 ####################
-def copy_pngdata(image_path):
-    img = Image.open(image_path)
+def copy_pngdata(img):
     if img.mode in ('RGBA', 'LA', 'P'):
         background = Image.new('RGB', img.size, (255, 255, 255))
         if img.mode == 'P':
@@ -41,5 +38,4 @@ def copy_pngdata(image_path):
     img.save(output, format='BMP')
     data = output.getvalue()[14:]
     output.close()
-    img.close()
     return data

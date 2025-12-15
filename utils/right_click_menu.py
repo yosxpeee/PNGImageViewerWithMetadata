@@ -80,33 +80,32 @@ def copy_text_to_clipboard(page: ft.Page, text: str, name: str = "テキスト")
 ####################
 def copy_image_to_clipboard(page: ft.Page, image_path: str, alpha: bool):
     try:
-        img = Image.open(image_path)
-        if alpha:
-            data = copy_pngdata_with_alpha(image_path)
-            win32clipboard.OpenClipboard()
-            win32clipboard.EmptyClipboard()
-            win32clipboard.SetClipboardData(win32clipboard.CF_DIBV5, data)
-            msg = "あり"
-        else:
-            data = copy_pngdata(image_path)
-            win32clipboard.OpenClipboard()
-            win32clipboard.EmptyClipboard()
-            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-            msg = "なし"
-        # PNGも登録
-        buf = io.BytesIO()
-        img.save(buf, format="PNG")
-        png_format = win32clipboard.RegisterClipboardFormat("PNG")
-        if png_format:
-            win32clipboard.SetClipboardData(png_format, buf.getvalue())
-        win32clipboard.CloseClipboard()
-        page.overlay.pop(),
-        page.open(ft.SnackBar(
-            content=ft.Text(f"画像をクリップボードにコピーしました！(透明度{msg})" ,color=ft.Colors.WHITE),
-            bgcolor=ft.Colors.GREEN_700,
-            duration=1500,
-        ))
-        img.close()
+        with Image.open(image_path) as img:
+            if alpha:
+                data = copy_pngdata_with_alpha(img)
+                win32clipboard.OpenClipboard()
+                win32clipboard.EmptyClipboard()
+                win32clipboard.SetClipboardData(win32clipboard.CF_DIBV5, data)
+                #オリジナルのPNGも追加登録
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                png_format = win32clipboard.RegisterClipboardFormat("PNG")
+                if png_format:
+                    win32clipboard.SetClipboardData(png_format, buf.getvalue())
+                msg = "あり"
+            else:
+                data = copy_pngdata(img)
+                win32clipboard.OpenClipboard()
+                win32clipboard.EmptyClipboard()
+                win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+                msg = "なし"
+            win32clipboard.CloseClipboard()
+            page.overlay.pop(),
+            page.open(ft.SnackBar(
+                content=ft.Text(f"画像をクリップボードにコピーしました！(透明度{msg})" ,color=ft.Colors.WHITE),
+                bgcolor=ft.Colors.GREEN_700,
+                duration=1500,
+            ))
         page.update()
     except Exception as e:
         page.open(ft.SnackBar(
