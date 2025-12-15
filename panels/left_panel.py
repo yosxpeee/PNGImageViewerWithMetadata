@@ -55,7 +55,7 @@ class LeftPanel:
         )
         # 検索用アイテム
         self.pick_folder_button = ft.ElevatedButton(
-            "検索フォルダを選択",
+            "フォルダ指定",
             icon=ft.Icons.FOLDER_OPEN,
             on_click=self.pick_folder,
         )
@@ -90,7 +90,7 @@ class LeftPanel:
             ft.Row([
                 self.pick_folder_button,
                 ft.ElevatedButton(
-                    "クリア", 
+                    "フォルダ指定解除", 
                     icon=ft.Icons.CLEAR,
                     on_click=self.clear_search_fields
                 ),
