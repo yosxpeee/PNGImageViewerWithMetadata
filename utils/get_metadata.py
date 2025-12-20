@@ -28,6 +28,15 @@ def get_tEXt(data):
         positive_index = text_raw.find('parameters')
         negative_index = text_raw.find('Negative prompt: ')
         others_index   = text_raw.find('Steps: ')
+        if positive_index == -1 and (negative_index != -1 or others_index != -1):
+            # parametersが見つからないが、Negative prompt: または Steps: が見つかった場合、
+            # Stable Diffusion WebUI由来と判断して先頭にparametersを追加する
+            # (e.g. Stealth PNG Infoの場合)
+            text_raw = "parameters " + text_raw
+            positive_index = 0
+            if (negative_index != -1):
+                negative_index += 11
+            others_index += 11
         if positive_index != -1:
             if negative_index == -1:
                 prompt_text = text_raw[positive_index+11:others_index].strip()
@@ -42,7 +51,7 @@ def get_tEXt(data):
 ####################
 # zTXt取得
 ####################
-def get_zTxt(data):
+def get_zTXt(data):
     keyword_end = data.index(b"\0")
     keyword = data[:keyword_end].decode("latin1")
     compressed = data[keyword_end+2:]
@@ -55,6 +64,9 @@ def get_zTxt(data):
 ####################
 def get_iTXt(data):
     text = ""
+    prompt_text = ""
+    negative_text = ""
+    other_info = ""
     exception = ""
     null1 = data.index(b"\0")
     keyword = data[:null1].decode("latin1")
@@ -73,9 +85,22 @@ def get_iTXt(data):
             text_raw = zlib.decompress(text_data).decode("utf-8", errors="replace")
     else:
         text_raw = text_data.decode("utf-8", errors="replace")
-    if lang_tag != "":
-        text += f"language tag: {lang_tag}\n"
-    if translated_keyword != "":
-        text += f"translated keyword: {translated_keyword}\n"
-    text += f"{keyword}: {text_raw}"
-    return text
+    # Stable Diffusionで作られたかどうかでデータを入れ分ける
+    if keyword != "parameters":
+        if lang_tag != "":
+            text += f"language tag: {lang_tag}\n"
+        if translated_keyword != "":
+            text += f"translated keyword: {translated_keyword}\n"
+        text += f"{keyword}: {text_raw}"
+    else:
+        positive_index = 0
+        negative_index = text_raw.find('Negative prompt: ')
+        others_index   = text_raw.find('Steps: ')
+        if negative_index == -1:
+            prompt_text = text_raw[positive_index:others_index].strip()
+            other_info = text_raw[others_index+7:].strip().replace(", ", "\n")
+        else:
+            prompt_text = text_raw[positive_index:negative_index].strip()
+            negative_text = text_raw[negative_index+17:others_index].strip()
+            other_info = text_raw[others_index+7:].strip().replace(", ", "\n")
+    return text, prompt_text, negative_text, other_info

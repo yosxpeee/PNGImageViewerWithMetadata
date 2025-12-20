@@ -9,7 +9,7 @@ import asyncio
 from panels.center_panel import CenterPanel
 from panels.right_panel import RightPanel
 from utils.scroll_record import record_left_scroll_position, replay_left_scroll_position
-from utils.get_metadata import get_tEXt
+from utils.get_metadata import get_tEXt, get_iTXt, get_zTXt
 
 class LeftPanel:
     instance = None
@@ -94,7 +94,7 @@ class LeftPanel:
             border_color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE),
         )
         self.search_target_itxt = ft.TextField(
-            label="メタデータ(tEXt)に含む文字列",
+            label="メタデータに含む文字列",
             hint_text="例: long hair",
             width=270,
             height=36,
@@ -370,7 +370,7 @@ class LeftPanel:
             self.page.update()
             return
         name_query = self.search_target_filename.value.strip().lower()
-        tExt_query = self.search_target_itxt.value.strip().lower()
+        text_query = self.search_target_itxt.value.strip().lower()
         loading = self.page.overlay[1]
         loading.visible = True
         loading.content.controls[2].value = "検索中…"
@@ -404,8 +404,8 @@ class LeftPanel:
             # ファイル名チェック
             if name_query != "" and name_query not in png_path.name.lower():
                 continue
-            # メタデータ(tEXt)チェック
-            if tExt_query != "":
+            # メタデータチェック
+            if text_query != "":
                 try:
                     with open(png_path, "rb") as f:
                         reader = png.Reader(file=f)
@@ -413,16 +413,35 @@ class LeftPanel:
                             ctype = chunk_type.decode("latin1", errors="ignore")
                             if ctype == "tEXt":
                                 text, prompt_text, negative_text, other_info = get_tEXt(data)
-                                if tExt_query in text:
+                                if text_query.lower() in text.lower():
                                     found_text = True
                                     break
-                                if tExt_query in prompt_text:
+                                if text_query.lower() in prompt_text.lower():
                                     found_text = True
                                     break
-                                if tExt_query in negative_text:
+                                if text_query.lower() in negative_text.lower():
                                     found_text = True
                                     break
-                                if tExt_query in other_info:
+                                if text_query.lower() in other_info.lower():
+                                    found_text = True
+                                    break
+                            if ctype == "iTXt":
+                                text, prompt_text, negative_text, other_info = get_iTXt(data)
+                                if text_query.lower() in text.lower():
+                                    found_text = True
+                                    break
+                                if text_query.lower() in prompt_text.lower():
+                                    found_text = True
+                                    break
+                                if text_query.lower() in negative_text.lower():
+                                    found_text = True
+                                    break
+                                if text_query.lower() in other_info.lower():
+                                    found_text = True
+                                    break
+                            if ctype == "zTXt":
+                                text = get_zTXt(data)
+                                if text_query.lower() in text.lower():
                                     found_text = True
                                     break
                 except Exception as e:
@@ -433,8 +452,8 @@ class LeftPanel:
                 found_text = True
             if found_text == True:
                 results.append(str(png_path))
-            # 進捗表示（20個ごとに）
-            if i % 20 == 0:
+            # 進捗表示（50個ごとに）
+            if i % 50 == 0:
                 loading.content.controls[2].value = f"検索中… {i}ファイル処理中/{all_file_num}"
                 self.page.update()
                 await asyncio.sleep(0.01)

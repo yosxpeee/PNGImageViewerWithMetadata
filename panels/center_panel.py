@@ -238,7 +238,15 @@ class CenterPanel:
         self.image_view.src = path
         self.image_view.visible = True
         self.thumbnail_grid.visible = False
+        self.interrupt_current_process = False
+        CenterPanel.instance.interrupt_current_process = False
+        loading_overlay = self.page.overlay[1]
+        loading_overlay.visible = True
+        loading_overlay.name = "loading"
+        loading_overlay.content.controls[2].value = "読み込み中…"
+        self.page.update()
         RightPanel.instance.update_metadata(path)
+        loading_overlay.visible = False
         self.page.update()
     ####################
     # 画像を非表示にする
