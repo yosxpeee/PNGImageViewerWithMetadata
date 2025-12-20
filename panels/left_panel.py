@@ -196,6 +196,7 @@ class LeftPanel:
         self.search_folder_path = None
         self.search_folder_text.value = "検索フォルダ: 未選択"
         self.search_button.disabled = True
+        CenterPanel.instance.show_no_images()
         RightPanel.instance.update_no_images_search()
         self.page.update()
     # イベント：ファイルブラウザのスクロール
