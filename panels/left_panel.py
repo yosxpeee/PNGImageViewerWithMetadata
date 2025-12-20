@@ -154,6 +154,11 @@ class LeftPanel:
         else:
             if self.rerun_search == True:
                 self.page.run_task(self.perform_search)
+        #右ペインは初期表示にリセットしておく
+        if e.control.selected_index == 0:
+            RightPanel.instance.update_no_images()
+        else:
+            RightPanel.instance.update_no_images_search()
         self.page.update()
     # イベント：トグルスイッチによるテーマ切り替え
     def toggle_theme(self, e):
