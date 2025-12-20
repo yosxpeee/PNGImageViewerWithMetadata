@@ -42,7 +42,7 @@ def copy_pngdata(img):
     output.close()
     return data
 ####################
-# 画像からステルスデータを検出する
+# PNG画像からステルスデータを検出する
 # (ここだけGPT-5 miniによる生成コード)
 ####################
 def detect_stealth_from_image(path):
