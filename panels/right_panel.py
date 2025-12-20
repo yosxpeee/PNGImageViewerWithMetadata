@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 
 from utils.right_click_menu import copy_text_to_clipboard
-from utils.get_metadata import get_zTxt, get_iTXt, get_tEXt
+from utils.get_metadata import get_zTXt, get_iTXt, get_tEXt
 from utils.pngdata import detect_stealth_from_image
 
 class RightPanel:
@@ -188,12 +188,11 @@ class RightPanel:
                     # tEXt (Stable Diffusion WebUIで作成したデータは詳細表示)
                     if ctype == "tEXt":
                         text, prompt_text, negative_text, other_info = get_tEXt(data)
+                        self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
                         if text != "":
-                            self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
                             self.metadata_text.controls.append(ft.Text(text))
                             found_metadata = True
                         else:
-                            self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
                             if prompt_text != "":
                                 self.add_prompt_section(prompt_text)
                             if negative_text != "":
@@ -201,16 +200,25 @@ class RightPanel:
                             if other_info != "":
                                 self.add_other_section(other_info)
                             found_metadata = True
-                    # iTXt (そのまま表示)
+                    # iTXt (Stable Diffusion WebUIで作成したデータは詳細表示)
                     elif ctype == "iTXt":
+                        text, prompt_text, negative_text, other_info = get_iTXt(data)
                         self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
-                        text = get_iTXt(data)
-                        self.metadata_text.controls.append(ft.Text(text))
-                        found_metadata = True
+                        if text != "":
+                            self.metadata_text.controls.append(ft.Text(text))
+                            found_metadata = True
+                        else:
+                            if prompt_text != "":
+                                self.add_prompt_section(prompt_text)
+                            if negative_text != "":
+                                self.add_negative_section(negative_text)
+                            if other_info != "":
+                                self.add_other_section(other_info)
+                            found_metadata = True
                     # zTXt (そのまま表示)
                     elif ctype == "zTXt":
                         self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
-                        text = get_zTxt(data)
+                        text = get_zTXt(data)
                         self.metadata_text.controls.append(ft.Text(text))
                         found_metadata = True
             if found_metadata == False:
