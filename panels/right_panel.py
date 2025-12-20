@@ -6,6 +6,7 @@ from datetime import datetime
 
 from utils.right_click_menu import copy_text_to_clipboard
 from utils.get_metadata import get_zTxt, get_iTXt, get_tEXt
+from utils.pngdata import detect_stealth_from_image
 
 class RightPanel:
     instance = None
@@ -91,6 +92,7 @@ class RightPanel:
                             self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
                             self.metadata_text.controls.append(ft.Text(text))
                         else:
+                            self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
                             if prompt_text != "":
                                 self.add_prompt_section(prompt_text)
                             if negative_text != "":
@@ -105,6 +107,26 @@ class RightPanel:
                         self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
                         text = get_iTXt(data)
                         self.metadata_text.controls.append(ft.Text(text))
+            # Stealth PNG Info
+            stealth_result = detect_stealth_from_image(image_path)
+            if stealth_result:
+                self.metadata_text.controls.extend([
+                    ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                    ft.Text("Stealth PNG Info", weight=ft.FontWeight.BOLD, size=16, color=theme_colors["meta_secondary_title"]),
+                ])
+                # ロジックを使いまわす
+                text, prompt_text, negative_text, other_info = get_tEXt(stealth_result['text'].encode('latin1', errors='ignore'))
+                if text != "":
+                    self.add_divider_and_text(f"テキスト: ", weight_bold=True)
+                    self.metadata_text.controls.append(ft.Text(text))
+                else:
+                    self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
+                    if prompt_text != "":
+                        self.add_prompt_section(prompt_text)
+                    if negative_text != "":
+                        self.add_negative_section(negative_text)
+                    if other_info != "":
+                        self.add_other_section(other_info)
             # ファイル情報
             self.metadata_text.controls.extend([
                 ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),

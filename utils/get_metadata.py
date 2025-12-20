@@ -28,6 +28,15 @@ def get_tEXt(data):
         positive_index = text_raw.find('parameters')
         negative_index = text_raw.find('Negative prompt: ')
         others_index   = text_raw.find('Steps: ')
+        if positive_index == -1 and (negative_index != -1 or others_index != -1):
+            # parametersが見つからないが、Negative prompt: または Steps: が見つかった場合、
+            # Stable Diffusion WebUI由来と判断して先頭にparametersを追加する
+            # (e.g. Stealth PNG Infoの場合)
+            text_raw = "parameters " + text_raw
+            positive_index = 0
+            if (negative_index != -1):
+                negative_index += 11
+            others_index += 11
         if positive_index != -1:
             if negative_index == -1:
                 prompt_text = text_raw[positive_index+11:others_index].strip()

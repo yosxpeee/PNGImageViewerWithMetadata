@@ -56,7 +56,7 @@ class ThemeManager:
         # 右パネルのタイトル色を更新
         if right_panel and right_panel.metadata_text.controls:
             for ctrl in right_panel.metadata_text.controls:
-                if isinstance(ctrl, ft.Text) and ctrl.value in ["PNG メタデータ", "ファイル情報"]:
+                if isinstance(ctrl, ft.Text) and ctrl.value in ["PNG メタデータ", "ファイル情報", "Stealth PNG Info"]:
                     ctrl.color = self.colors["meta_secondary_title"]
         # ページ全体のアップデート
         page.update()
