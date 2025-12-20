@@ -46,6 +46,17 @@ def copy_pngdata(img):
 # (ここだけGPT-5 miniによる生成コード)
 ####################
 def detect_stealth_from_image(path):
+    # バイナリ列からテキスト文字列にする
+    def binary_to_text(binstr):
+        try:
+            b = bytearray()
+            for i in range(0, len(binstr), 8):
+                chunk = binstr[i:i+8]
+                if len(chunk) == 8:
+                    b.append(int(chunk, 2))
+            return bytes(b).decode('utf-8', errors='ignore')
+        except Exception:
+            return ''
     pil_img = Image.open(path).convert("RGBA")
     arr = np.array(pil_img)
     h, w = arr.shape[0], arr.shape[1]
@@ -63,16 +74,6 @@ def detect_stealth_from_image(path):
                    'stealth_pngcomp': { 'mode': 'Alpha', 'compressed': True },
                    'stealth_rgbinfo': { 'mode': 'RGB', 'compressed': False },
                    'stealth_rgbcomp': { 'mode': 'RGB', 'compressed': True } }
-    def binary_to_text(binstr):
-        try:
-            b = bytearray()
-            for i in range(0, len(binstr), 8):
-                chunk = binstr[i:i+8]
-                if len(chunk) == 8:
-                    b.append(int(chunk, 2))
-            return bytes(b).decode('utf-8', errors='ignore')
-        except Exception:
-            return ''
     for idx, bit_string in enumerate(candidates):
         for sig_text, siginfo in signatures.items():
             sig_bits = ''.join(format(ord(c), '08b') for c in sig_text)

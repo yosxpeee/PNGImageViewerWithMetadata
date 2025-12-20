@@ -10,6 +10,7 @@ from panels.center_panel import CenterPanel
 from panels.right_panel import RightPanel
 from utils.scroll_record import record_left_scroll_position, replay_left_scroll_position
 from utils.get_metadata import get_tEXt
+from utils.pngdata import detect_stealth_from_image
 
 class LeftPanel:
     instance = None
@@ -433,8 +434,8 @@ class LeftPanel:
                 found_text = True
             if found_text == True:
                 results.append(str(png_path))
-            # 進捗表示（20個ごとに）
-            if i % 20 == 0:
+            # 進捗表示（50個ごとに）
+            if i % 50 == 0:
                 loading.content.controls[2].value = f"検索中… {i}ファイル処理中/{all_file_num}"
                 self.page.update()
                 await asyncio.sleep(0.01)

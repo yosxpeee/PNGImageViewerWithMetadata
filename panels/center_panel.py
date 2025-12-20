@@ -238,6 +238,8 @@ class CenterPanel:
         self.image_view.src = path
         self.image_view.visible = True
         self.thumbnail_grid.visible = False
+        self.interrupt_current_process = False
+        CenterPanel.instance.interrupt_current_process = False
         loading_overlay = self.page.overlay[1]
         loading_overlay.visible = True
         loading_overlay.name = "loading"
