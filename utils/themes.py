@@ -1,5 +1,8 @@
 import flet as ft
 
+#右パネルの表示変更対象のタイトル文字列
+RIGHT_PANEL_TITLES = ["ファイル情報", "PNG メタデータ", "Stealth PNG Info"]
+
 class ThemeColors:
     @staticmethod
     def light():
@@ -56,7 +59,7 @@ class ThemeManager:
         # 右パネルのタイトル色を更新
         if right_panel and right_panel.metadata_text.controls:
             for ctrl in right_panel.metadata_text.controls:
-                if isinstance(ctrl, ft.Text) and ctrl.value in ["PNG メタデータ", "ファイル情報", "Stealth PNG Info"]:
+                if isinstance(ctrl, ft.Text) and ctrl.value in RIGHT_PANEL_TITLES:
                     ctrl.color = self.colors["meta_secondary_title"]
         # ページ全体のアップデート
         page.update()
