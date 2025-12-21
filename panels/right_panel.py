@@ -66,12 +66,6 @@ class RightPanel:
             ft.Text(path, size=12, color=ft.Colors.OUTLINE),
         ])
     ####################
-    # 水平線とテキストの追加
-    ####################
-    def add_divider_and_text(self, text, weight_bold=False):
-        self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
-        self.metadata_text.controls.append(ft.Text(text, weight=ft.FontWeight.BOLD if weight_bold else ft.FontWeight.NORMAL))
-    ####################
     # コピーできるテキスト
     ####################
     def make_copyable_text(self, value: str, size=12):
@@ -151,6 +145,11 @@ class RightPanel:
     # メタデータ表示の更新
     ####################
     def update_metadata(self, image_path: str):
+        # 水平線とテキストの追加
+        def add_divider_and_text(text, weight_bold=False):
+            self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
+            self.metadata_text.controls.append(ft.Text(text, weight=ft.FontWeight.BOLD if weight_bold else ft.FontWeight.NORMAL))
+        
         theme_colors = self.theme_manager.colors
         self.metadata_text.controls.clear()
         if not image_path:
@@ -188,7 +187,7 @@ class RightPanel:
                     # tEXt (Stable Diffusion WebUIで作成したデータは詳細表示)
                     if ctype == "tEXt":
                         text, prompt_text, negative_text, other_info = get_tEXt(data)
-                        self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
+                        add_divider_and_text(f"{ctype}: ", weight_bold=True)
                         if text != "":
                             self.metadata_text.controls.append(ft.Text(text))
                             found_metadata = True
@@ -203,7 +202,7 @@ class RightPanel:
                     # iTXt (Stable Diffusion WebUIで作成したデータは詳細表示)
                     elif ctype == "iTXt":
                         text, prompt_text, negative_text, other_info = get_iTXt(data)
-                        self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
+                        add_divider_and_text(f"{ctype}: ", weight_bold=True)
                         if text != "":
                             self.metadata_text.controls.append(ft.Text(text))
                             found_metadata = True
@@ -217,7 +216,7 @@ class RightPanel:
                             found_metadata = True
                     # zTXt (そのまま表示)
                     elif ctype == "zTXt":
-                        self.add_divider_and_text(f"{ctype}: ", weight_bold=True)
+                        add_divider_and_text(f"{ctype}: ", weight_bold=True)
                         text = get_zTXt(data)
                         self.metadata_text.controls.append(ft.Text(text))
                         found_metadata = True
@@ -235,7 +234,7 @@ class RightPanel:
                 # メタデータ(tEXt)のロジックを使いまわす
                 text, prompt_text, negative_text, other_info = get_tEXt(stealth_result['text'].encode('latin1', errors='ignore'))
                 if text != "":
-                    self.add_divider_and_text(f"テキスト: ", weight_bold=True)
+                    add_divider_and_text(f"テキスト: ", weight_bold=True)
                     self.metadata_text.controls.append(ft.Text(text))
                 else:
                     self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))

@@ -49,17 +49,6 @@ def get_tEXt(data):
             text = f"tEXt: {text_raw}"
     return text, prompt_text, negative_text, other_info
 ####################
-# zTXt取得
-####################
-def get_zTXt(data):
-    keyword_end = data.index(b"\0")
-    keyword = data[:keyword_end].decode("latin1")
-    compressed = data[keyword_end+2:]
-    decompressed = zlib.decompress(compressed)
-    text = decompressed.decode("utf-8", errors="replace")
-    text = f"{keyword}: {text}"
-    return text
-####################
 # iTXt取得
 ####################
 def get_iTXt(data):
@@ -104,3 +93,14 @@ def get_iTXt(data):
             negative_text = text_raw[negative_index+17:others_index].strip()
             other_info = text_raw[others_index+7:].strip().replace(", ", "\n")
     return text, prompt_text, negative_text, other_info
+####################
+# zTXt取得
+####################
+def get_zTXt(data):
+    keyword_end = data.index(b"\0")
+    keyword = data[:keyword_end].decode("latin1")
+    compressed = data[keyword_end+2:]
+    decompressed = zlib.decompress(compressed)
+    text = decompressed.decode("utf-8", errors="replace")
+    text = f"{keyword}: {text}"
+    return text

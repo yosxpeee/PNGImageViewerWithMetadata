@@ -57,6 +57,7 @@ def detect_stealth_from_image(path):
             return bytes(b).decode('utf-8', errors='ignore')
         except Exception:
             return ''
+
     pil_img = Image.open(path).convert("RGBA")
     arr = np.array(pil_img)
     h, w = arr.shape[0], arr.shape[1]
