@@ -82,7 +82,7 @@ def save_without_metadata(page: ft.Page, image_path: str):
             bytes_per_pixel = 4
             padded_row_size = ((w * bytes_per_pixel + 3) // 4) * 4
             expected_size = padded_row_size * h
-            # 実際のサイズと比較（デバッグ用にprint残してもOK）
+            # 実際のサイズと比較
             actual_size = len(pixel_data)
             if actual_size != expected_size:
                 # 強制的に正しいサイズに切り詰める

@@ -224,7 +224,7 @@ class RightPanel:
                 self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
                 self.metadata_text.controls.append(ft.Text("なし"))
             # Stealth PNG Info
-            # (ない場合は項目自体を非表示とする)
+            # (読まない設定の場合、もしくは画像に存在しない場合は項目自体を非表示とする)
             stealth_result = detect_stealth_from_image(image_path, self.settings["settings"]["read_stealth_png_info"])
             if stealth_result:
                 self.metadata_text.controls.extend([
