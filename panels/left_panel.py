@@ -26,20 +26,16 @@ class LeftPanel:
         self.search_folder_text = ft.Text("検索フォルダ: 未選択", size=12, width=270)
         self.search_folder_path = None  # 実際に選んだパス
         # 一番左のモード切り替えパネ(ルナビゲーションレール)
-        # 閲覧/検索のどちらにも置くアイテム
-        self.theme_switch = ft.Switch(
-            value=settings["memory"]["dark_theme"],
-            on_change=self.toggle_theme,
-            tooltip="ダークモード",
-            label_position=ft.LabelPosition.LEFT,
-            height=24,
-        )
         self.navi_rail = ft.NavigationRail(
             selected_index=0,
             min_width=60,
             width=60,
             group_alignment=-0.9,
-            leading=self.theme_switch,
+            leading=ft.Column([
+                ft.FloatingActionButton(icon=ft.Icons.SETTINGS, text="", mini=True, on_click=self.open_option),
+                ft.Text("設定", text_align=ft.TextAlign.CENTER, size=13, weight=ft.FontWeight.BOLD),
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+            ],horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icons.REMOVE_RED_EYE_OUTLINED,
@@ -54,7 +50,33 @@ class LeftPanel:
             ],
             on_change=self.switch_right_item,
         )
-
+        # オプション用アイテム
+        self.theme_switch = ft.Switch(
+            value=settings["settings"]["dark_theme"],
+            on_change=self.toggle_theme,
+            tooltip="テーマを切り替えます",
+            label="ダークモード",
+            label_position=ft.LabelPosition.LEFT,
+            height=36,
+        )
+        self.option_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("設定"),
+            content=ft.Column([
+                ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),
+                self.theme_switch,
+                ft.Checkbox(
+                    label="Stealth PNG Infoを読み込む", 
+                    value=settings["settings"]["read_stealth_png_info"],
+                    on_change=self.stealth_png_info_changed
+                ),
+            ]),
+            actions=[
+                ft.TextButton("OK", on_click=lambda e: (
+                    page.close(self.option_dialog),
+                )),
+            ],
+        )
         # 閲覧用アイテム
         self.dir_list = ft.ListView(
             expand=True,
@@ -163,7 +185,7 @@ class LeftPanel:
     # イベント：トグルスイッチによるテーマ切り替え
     def toggle_theme(self, e):
         # スイッチの値で設定を更新
-        self.settings["memory"]["dark_theme"] = self.theme_switch.value
+        self.settings["settings"]["dark_theme"] = self.theme_switch.value
         # 色を更新
         self.theme_manager.update_colors()
         # テーマを全てに適用
@@ -173,6 +195,16 @@ class LeftPanel:
             CenterPanel.instance,
             RightPanel.instance
         )
+    # イベント：オプション設定を開く
+    def open_option(self, e):
+        self.page.open(self.option_dialog)
+        pass
+    # イベント：オプション設定の切り替え
+    def stealth_png_info_changed(self, e):
+        if e.data == "true":
+            self.settings["settings"]["read_stealth_png_info"] = True
+        else:
+            self.settings["settings"]["read_stealth_png_info"] = False
     # イベント：ファイルピッカー
     def pick_folder(self, e):
         #ディレクトリを選びなおそうとした時点で確実にキャンセルのフラグは消す
