@@ -198,7 +198,6 @@ class LeftPanel:
     # イベント：オプション設定を開く
     def open_option(self, e):
         self.page.open(self.option_dialog)
-        pass
     # イベント：オプション設定の切り替え
     def stealth_png_info_changed(self, e):
         if e.data == "true":
