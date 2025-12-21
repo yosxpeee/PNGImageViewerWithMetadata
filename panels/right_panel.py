@@ -4,7 +4,7 @@ import png
 from pathlib import Path
 from datetime import datetime
 
-from utils.right_click_menu import copy_text_to_clipboard
+from panels.right_click_menu import copy_text_to_clipboard
 from utils.get_metadata import get_zTXt, get_iTXt, get_tEXt
 from utils.pngdata import detect_stealth_from_image
 
