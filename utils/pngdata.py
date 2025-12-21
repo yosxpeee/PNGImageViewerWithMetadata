@@ -107,7 +107,10 @@ def detect_stealth_from_image(path):
                     try:
                         param_text = zlib.decompress(param_bytes).decode('utf-8', errors='ignore')
                     except Exception:
-                        param_text = gzip.decompress(param_bytes).decode('utf-8', errors='ignore')
+                        try:
+                            param_text = gzip.decompress(param_bytes).decode('utf-8', errors='ignore')
+                        except Exception:
+                            param_text = "[ERROR] unknown compression format"
                 else:
                     param_text = param_bytes.decode('utf-8', errors='ignore')
                 return {
