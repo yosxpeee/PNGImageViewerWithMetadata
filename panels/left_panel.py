@@ -28,7 +28,7 @@ class LeftPanel:
         # 一番左のモード切り替えパネ(ルナビゲーションレール)
         # 閲覧/検索のどちらにも置くアイテム
         self.theme_switch = ft.Switch(
-            value=settings["dark_theme"],
+            value=settings["memory"]["dark_theme"],
             on_change=self.toggle_theme,
             tooltip="ダークモード",
             label_position=ft.LabelPosition.LEFT,
@@ -163,7 +163,7 @@ class LeftPanel:
     # イベント：トグルスイッチによるテーマ切り替え
     def toggle_theme(self, e):
         # スイッチの値で設定を更新
-        self.settings["dark_theme"] = self.theme_switch.value
+        self.settings["memory"]["dark_theme"] = self.theme_switch.value
         # 色を更新
         self.theme_manager.update_colors()
         # テーマを全てに適用
@@ -307,7 +307,7 @@ class LeftPanel:
                 self.dir_list.controls.append(ft.Text("アクセス拒否", color="red"))
         # スクロール位置復元（共通）
         replay_left_scroll_position(self.page, self.current_path_text, self.dir_list)
-        self.settings["last_dir"] = path
+        self.settings["memory"]["last_dir"] = path
         self.page.update()
     ####################
     # リスト表示部分の生成

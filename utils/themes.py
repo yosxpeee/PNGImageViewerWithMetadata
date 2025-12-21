@@ -38,13 +38,13 @@ class ThemeManager:
     # カラーテーマ設定の更新
     ####################
     def update_colors(self):
-        self.colors = ThemeColors.dark() if self.settings["dark_theme"] else ThemeColors.light()
+        self.colors = ThemeColors.dark() if self.settings["memory"]["dark_theme"] else ThemeColors.light()
     ####################
     # アプリケーションにテーマを反映させる
     ####################
     def apply_to_app(self, page, left_panel, center_panel, right_panel):
         # テーマモード
-        page.theme_mode = ft.ThemeMode.DARK if self.settings["dark_theme"] else ft.ThemeMode.LIGHT
+        page.theme_mode = ft.ThemeMode.DARK if self.settings["memory"]["dark_theme"] else ft.ThemeMode.LIGHT
         # 背景色
         page.bgcolor = self.colors["bg_main"]
         if center_panel:

@@ -10,10 +10,18 @@ class SettingsManager:
         if os.path.exists(SETTING_JSON_FILE):
             with open(SETTING_JSON_FILE, 'r') as f:
                 settings = json.load(f)
-        if "dark_theme" not in settings:
-            settings["dark_theme"] = False
-        if "last_dir" not in settings:
-            settings["last_dir"] = "<DRIVES>"
+        # 最後の状態記憶
+        if "memory" not in settings:
+            settings["memory"] = {}
+        if "dark_theme" not in settings["memory"]:
+            settings["memory"]["dark_theme"] = False
+        if "last_dir" not in settings["memory"]:
+            settings["memory"]["last_dir"] = "<DRIVES>"
+        # オプション
+        if "settings" not in settings:
+            settings["settings"] = {}
+        if "read_stealth_png_info" not in settings["settings"]:
+            settings["settings"]["read_stealth_png_info"] = True
         return settings
     @staticmethod
     def save(settings):
