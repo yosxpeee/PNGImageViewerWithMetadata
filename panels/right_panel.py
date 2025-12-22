@@ -4,7 +4,7 @@ import png
 from pathlib import Path
 from datetime import datetime
 
-from utils.right_click_menu import copy_text_to_clipboard
+from panels.right_click_menu import copy_text_to_clipboard
 from utils.get_metadata import get_zTXt, get_iTXt, get_tEXt
 from utils.pngdata import detect_stealth_from_image
 
@@ -145,11 +145,11 @@ class RightPanel:
     # メタデータ表示の更新
     ####################
     def update_metadata(self, image_path: str):
-        # 水平線とテキストの追加
+        # 内部関数：水平線とテキストの追加
         def add_divider_and_text(text, weight_bold=False):
             self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
             self.metadata_text.controls.append(ft.Text(text, weight=ft.FontWeight.BOLD if weight_bold else ft.FontWeight.NORMAL))
-        
+        # 処理開始
         theme_colors = self.theme_manager.colors
         self.metadata_text.controls.clear()
         if not image_path:
@@ -224,8 +224,8 @@ class RightPanel:
                 self.metadata_text.controls.append(ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)))
                 self.metadata_text.controls.append(ft.Text("なし"))
             # Stealth PNG Info
-            # (ない場合は項目自体を非表示とする)
-            stealth_result = detect_stealth_from_image(image_path)
+            # (読まない設定の場合、もしくは画像に存在しない場合は項目自体を非表示とする)
+            stealth_result = detect_stealth_from_image(image_path, self.settings["settings"]["read_stealth_png_info"])
             if stealth_result:
                 self.metadata_text.controls.extend([
                     ft.Divider(height=1, color=ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE)),

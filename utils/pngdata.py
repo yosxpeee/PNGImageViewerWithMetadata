@@ -45,8 +45,8 @@ def copy_pngdata(img):
 # PNG画像からステルスデータを検出する
 # (ここだけGPT-5 miniによる生成コード)
 ####################
-def detect_stealth_from_image(path):
-    # バイナリ列からテキスト文字列にする
+def detect_stealth_from_image(path, flag):
+    # 内部関数：バイナリ列からテキスト文字列にする
     def binary_to_text(binstr):
         try:
             b = bytearray()
@@ -57,7 +57,10 @@ def detect_stealth_from_image(path):
             return bytes(b).decode('utf-8', errors='ignore')
         except Exception:
             return ''
-
+    # 処理開始
+    if flag == False:
+        # オプションで読まない設定になっていた場合は処理を何もせずNoneを返す
+        return None
     pil_img = Image.open(path).convert("RGBA")
     arr = np.array(pil_img)
     h, w = arr.shape[0], arr.shape[1]

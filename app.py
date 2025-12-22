@@ -110,7 +110,7 @@ class ImageViewerApp:
             ], expand=True, spacing=0)
         )
         # 初期表示
-        self.left_panel.navigate_to(self.settings["last_dir"])
+        self.left_panel.navigate_to(self.settings["memory"]["last_dir"])
         # イベント設定
         page.window.on_event = self.on_window_close
         self.setup_mouse_navigation(page)

@@ -50,6 +50,9 @@ def get_tEXt(data):
     return text, prompt_text, negative_text, other_info
 ####################
 # iTXt取得
+#
+# 画像がStable Diffusion WebUIで作られているかどうかはparametersがあるかどうかで判断
+# 戻り値はtEXtと同じ
 ####################
 def get_iTXt(data):
     text = ""
@@ -95,6 +98,8 @@ def get_iTXt(data):
     return text, prompt_text, negative_text, other_info
 ####################
 # zTXt取得
+#
+# 読んだまま返す
 ####################
 def get_zTXt(data):
     keyword_end = data.index(b"\0")

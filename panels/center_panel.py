@@ -7,8 +7,8 @@ import os
 import asyncio
 
 from panels.right_panel import RightPanel
+from panels.right_click_menu import create_image_context_menu
 from utils.scroll_record import record_center_scroll_position, replay_center_scroll_position
-from utils.right_click_menu import create_image_context_menu
 
 class CenterPanel:
     instance = None
