@@ -1,4 +1,4 @@
-# PNG Image Viewer with metadata
+# PNG Image Viewer with Metadata
 !["Overview Image"](readme_images/overview.png)
 ## 動作条件
 Windows 11  
@@ -10,16 +10,18 @@ start.bat を実行するだけ。
 ## 使い方
 ### 左ペイン
 #### 設定
+!["Options Image"](readme_images/options.png)
 - ダークモード
   - トグルスイッチでテーマを切り替えます。
   - デフォルト：OFF(ライトテーマ)
 - Stealth PNG Infoを読み込む：
   - 画像を選択して表示する際のメタデータ取得においてStealth PNG Infoを読み込みます。
-  - OFFにすると読み込みが早くなります。
+  - OFFにするとStealth PNG Infoを探しにいかなくなるので画像の読み込みが早くなります。
   - デフォルト：ON
 
 下部のOKボタンで閉じます。
 #### 閲覧モード
+!["File Browser Image"](readme_images/file_browser.png)  
 Windowsのエクスプローラーに似たファイルリストが表示されます。  
 移動　　：左クリック  
 履歴移動：マウスの進む/戻る  
@@ -27,6 +29,7 @@ Windowsのエクスプローラーに似たファイルリストが表示され�
 
 また、直前に見ていた場所を記憶しており、次回の起動時や検索モードから切り替えた際に状態を再現します。
 #### 検索モード
+!["File Search Image"](readme_images/file_search.png)  
 ディレクトリを指定して、ファイル名およびメタデータに対して検索ができます。
 - サブディレクトリは再帰的に検索します。  
 (ゆえにドライブ直下等を指定すると大変なことになります…)
@@ -37,6 +40,8 @@ Windowsのエクスプローラーに似たファイルリストが表示され�
 また、閲覧モードから切り替えた際は直前の検索結果を復元しますが、前回起動時に最後に検索した内容は記憶していません。  
 検索中断後に閲覧モードに切り替えてから戻ってきた場合も、再検索は行いません。
 ### 中ペイン
+!["Thumbnail View Image"](readme_images/thumbnail_view.png)  
+中ペインにはサムネイル表示および選択画像の表示がされます。  
 #### 閲覧モード
 ファイルブラウザ側でPNG画像のあるディレクトリに移動すると、サムネイル表示がされます。  
 サムネイルをクリックすることや、ファイルブラウザから直接画像を選択することで画像1枚を大きく表示できます。  
@@ -57,8 +62,8 @@ Windowsのエクスプローラーに似たファイルリストが表示され�
   - 表示中の画像が選択された状態でWindowsのエクスプローラが立ち上がります。
 
 ### 右ペイン：ファイル情報(メタデータ)
-ここには画像をクリックした際にメタデータなどが表示されます。  
 !["Right Panel Image"](readme_images/right_panel.png)  
+ここには画像をクリックした際にメタデータなどが表示されます。  
 対応しているメタデータの種類はtEXt、iTXt、zTXtです。  
 Stable Duffusion WebUIで生成された画像については
 - ポジティブプロンプト
