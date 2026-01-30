@@ -110,7 +110,11 @@ class ImageViewerApp:
             ], expand=True, spacing=0)
         )
         # 初期表示
-        self.left_panel.navigate_to(self.settings["memory"]["last_dir"])
+        try:
+            self.left_panel.navigate_to(self.settings["memory"]["last_dir"])
+        except FileNotFoundError:
+            # 最後に表示したディレクトリが消されていた場合はドライブ一覧を表示する
+            self.left_panel.navigate_to("<DRIVES>")
         # イベント設定
         page.window.on_event = self.on_window_close
         self.setup_mouse_navigation(page)
